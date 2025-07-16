@@ -424,6 +424,9 @@
         <header class="fade-in">
             <h1>💰 Sistema de Adelantos - Google Sheets</h1>
             <p>Sincronización automática en la nube</p>
+            <div id="userInfo" style="margin-top: 10px; font-size: 14px; opacity: 0.9;">
+                Usuario: <span id="currentUser" style="font-weight: bold;">No identificado</span>
+            </div>
         </header>
 
         <div class="setup-notice" id="setupNotice">
@@ -508,6 +511,7 @@
                 <button class="btn-success" onclick="exportToExcel()">📥 Exportar a Excel</button>
                 <button class="btn-secondary" onclick="refreshData()">🔄 Actualizar</button>
                 <button class="btn-secondary" onclick="openBulkPayment()">💳 Pago Masivo</button>
+                <button class="btn-secondary" onclick="changeUser()">👤 Cambiar Usuario</button>
             </div>
             <div id="dateAdvancesInfo"></div>
             <div class="table-container">
@@ -519,6 +523,7 @@
                             <th>Empleado</th>
                             <th>Monto</th>
                             <th>Anotaciones</th>
+                            <th>Registrado por</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -529,6 +534,20 @@
         </div>
 
 
+    </div>
+
+    <div id="loginModal" class="modal" style="display: flex;">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2>👤 Identificación de Usuario</h2>
+            <p style="color: #666; margin-bottom: 20px;">Por favor ingrese su nombre para registrar las acciones</p>
+            <form id="loginForm" onsubmit="saveUser(event)">
+                <div class="form-group">
+                    <label for="userName">Su nombre:</label>
+                    <input type="text" id="userName" placeholder="Ej: Juan Administrador" required>
+                </div>
+                <button type="submit" style="width: 100%;">Ingresar al Sistema</button>
+            </form>
+        </div>
     </div>
 
     <div id="editModal" class="modal">
@@ -607,16 +626,46 @@
         let currentDate = new Date();
         let currentFilter = 'all';
         let editingId = null;
+        let currentUser = localStorage.getItem('currentUser') || '';
 
         // Inicializar
         document.addEventListener('DOMContentLoaded', function() {
+            // Verificar si hay usuario guardado
+            if (!currentUser) {
+                document.getElementById('loginModal').style.display = 'flex';
+            } else {
+                document.getElementById('currentUser').textContent = currentUser;
+                document.getElementById('loginModal').style.display = 'none';
+            }
+            
             checkSetup();
             initializeForm();
             
-            if (WEB_APP_URL) {
+            if (WEB_APP_URL && currentUser) {
                 loadData();
             }
         });
+
+        // Guardar usuario
+        function saveUser(event) {
+            event.preventDefault();
+            const userName = document.getElementById('userName').value.trim();
+            if (userName) {
+                currentUser = userName;
+                localStorage.setItem('currentUser', userName);
+                document.getElementById('currentUser').textContent = userName;
+                document.getElementById('loginModal').style.display = 'none';
+                
+                if (WEB_APP_URL) {
+                    loadData();
+                }
+            }
+        }
+
+        // Cambiar usuario
+        function changeUser() {
+            document.getElementById('loginModal').style.display = 'flex';
+        }
 
         // Verificar configuración
         function checkSetup() {
@@ -778,7 +827,9 @@
                 date: document.getElementById('date').value,
                 employeeName: document.getElementById('employeeName').value,
                 amount: parseInt(document.getElementById('amount').value),
-                notes: document.getElementById('notes').value
+                notes: document.getElementById('notes').value,
+                registeredBy: currentUser, // Agregar usuario que registra
+                registeredAt: new Date().toISOString() // Agregar timestamp
             };
 
             const result = await saveToSheets('create', advance);
@@ -791,7 +842,7 @@
                 document.getElementById('advanceForm').reset();
                 document.getElementById('date').value = new Date().toISOString().split('T')[0];
                 
-                showNotification('Adelanto registrado y sincronizado');
+                showNotification(`Adelanto registrado por ${currentUser}`);
             }
             
             submitBtn.disabled = false;
@@ -868,11 +919,20 @@
 
             filteredAdvances.forEach(advance => {
                 const row = tbody.insertRow();
+                const registeredBy = advance.registeredBy || 'Sistema anterior';
+                const registeredAt = advance.registeredAt ? new Date(advance.registeredAt).toLocaleDateString('es-ES') : '';
+                
                 row.innerHTML = `
                     <td>${formatDate(advance.date)}</td>
                     <td>${advance.employeeName}</td>
                     <td>₲ ${advance.amount.toLocaleString('es-PY')}</td>
                     <td>${advance.notes || '-'}</td>
+                    <td>
+                        <small style="color: #666;">
+                            ${registeredBy}
+                            ${registeredAt ? '<br>' + registeredAt : ''}
+                        </small>
+                    </td>
                     <td class="actions">
                         <button class="btn-small btn-secondary" onclick="editAdvance(${advance.id})">✏️</button>
                         <button class="btn-small btn-danger" onclick="deleteAdvance(${advance.id})">🗑️</button>
