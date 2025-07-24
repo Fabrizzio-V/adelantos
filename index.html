@@ -407,10 +407,14 @@
             background: #f0f0f0;
         }
 
-        #customEmployees > div {
-            padding: 10px;
-            background: #f8f9fa;
+        .name-warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
             border-radius: 5px;
+            padding: 8px;
+            margin-top: 5px;
+            font-size: 14px;
+            color: #856404;
         }
     </style>
 </head>
@@ -472,7 +476,8 @@
                     </div>
                     <div class="form-group">
                         <label for="employeeName">Nombre del Empleado:</label>
-                        <input type="text" id="employeeName" placeholder="Ej: Juan Pérez" required>
+                        <input type="text" id="employeeName" list="employeeNamesList" placeholder="Ej: Juan Pérez" required>
+                        <datalist id="employeeNamesList"></datalist>
                     </div>
                     <div class="form-group">
                         <label for="amount">Monto (₲):</label>
@@ -513,6 +518,7 @@
                 <button class="btn-secondary" onclick="openBulkPayment()">💳 Pago Masivo</button>
                 <button class="btn-secondary" onclick="changeUser()">👤 Cambiar Usuario</button>
                 <button class="btn-secondary" onclick="checkDataIntegrity()" style="background: #ff9800;">🔍 Verificar Datos</button>
+                <button class="btn-secondary" onclick="showNameNormalizationDialog()" style="background: #9c27b0;">🔧 Normalizar Nombres</button>
             </div>
             <div id="dateAdvancesInfo"></div>
             <div class="table-container">
@@ -835,6 +841,42 @@
                 e.preventDefault();
                 await updateAdvance();
             });
+            
+            // Agregar validación en tiempo real para nombres de empleados
+            const employeeNameInput = document.getElementById('employeeName');
+            employeeNameInput.addEventListener('blur', function() {
+                checkSimilarNames(this.value);
+            });
+        }
+
+        // Verificar nombres similares
+        function checkSimilarNames(inputName) {
+            if (!inputName.trim()) return;
+            
+            const normalizedInput = normalizeEmployeeName(inputName);
+            const existingEmployees = [...new Set(advances.map(a => a.employeeName))];
+            
+            // Buscar si ya existe un empleado con el mismo nombre normalizado
+            const similarNames = existingEmployees.filter(existing => 
+                normalizeEmployeeName(existing) === normalizedInput && 
+                existing !== inputName
+            );
+            
+            // Remover advertencia previa si existe
+            const existingWarning = document.querySelector('.name-warning');
+            if (existingWarning) {
+                existingWarning.remove();
+            }
+            
+            if (similarNames.length > 0) {
+                const warning = document.createElement('div');
+                warning.className = 'name-warning';
+                warning.innerHTML = `
+                    ⚠️ Nombre similar detectado: "${similarNames[0]}"<br>
+                    <small>Considere usar el mismo formato para mantener consistencia</small>
+                `;
+                document.getElementById('employeeName').parentElement.appendChild(warning);
+            }
         }
 
         // Agregar adelanto
@@ -907,6 +949,22 @@
             renderTable();
             updateCalendar();
             updateStats();
+            updateEmployeesList();
+        }
+
+        // Actualizar lista de empleados para autocompletado
+        function updateEmployeesList() {
+            const datalist = document.getElementById('employeeNamesList');
+            datalist.innerHTML = '';
+            
+            // Obtener nombres únicos de empleados
+            const employeeNames = [...new Set(advances.map(a => a.employeeName))].sort();
+            
+            employeeNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                datalist.appendChild(option);
+            });
         }
 
         // Renderizar tabla
@@ -1013,6 +1071,16 @@
             }
         }
 
+        // Función para normalizar nombres
+        function normalizeEmployeeName(name) {
+            if (!name) return '';
+            return name
+                .toLowerCase() // Convertir a minúsculas
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Eliminar tildes
+                .replace(/\s+/g, ' ') // Reemplazar múltiples espacios por uno
+                .trim(); // Eliminar espacios al inicio y final
+        }
+
         // Actualizar estadísticas
         function updateStats() {
             // Filtrar solo adelantos válidos con montos numéricos
@@ -1023,7 +1091,12 @@
                 const amount = parseInt(a.amount) || 0;
                 return sum + amount;
             }, 0);
-            const uniqueEmployees = new Set(validAdvances.map(a => a.employeeName)).size;
+            
+            // Contar empleados únicos usando nombres normalizados
+            const normalizedEmployees = new Set(
+                validAdvances.map(a => normalizeEmployeeName(a.employeeName))
+            );
+            const uniqueEmployees = normalizedEmployees.size;
             
             document.getElementById('totalAdvances').textContent = totalAdvances;
             document.getElementById('totalAmount').textContent = `₲ ${totalAmount.toLocaleString('es-PY')}`;
@@ -1034,7 +1107,8 @@
                 totalRegistros: advances.length,
                 registrosValidos: validAdvances.length,
                 montoTotal: totalAmount,
-                empleadosUnicos: uniqueEmployees
+                empleadosUnicos: uniqueEmployees,
+                empleadosNormalizados: Array.from(normalizedEmployees)
             });
         }
 
@@ -1232,20 +1306,32 @@
             const currentMonth = today.getMonth();
             const currentYear = today.getFullYear();
             
-            // Calcular adelantos por empleado en el mes actual
+            // Calcular adelantos por empleado en el mes actual (usando nombres normalizados)
             const employeeAdvances = {};
+            const employeeOriginalNames = {};
+            
             advances.forEach(adv => {
                 const advDate = new Date(adv.date);
                 if (advDate.getMonth() === currentMonth && advDate.getFullYear() === currentYear) {
-                    if (!employeeAdvances[adv.employeeName]) {
-                        employeeAdvances[adv.employeeName] = 0;
+                    const normalizedName = normalizeEmployeeName(adv.employeeName);
+                    if (!employeeAdvances[normalizedName]) {
+                        employeeAdvances[normalizedName] = 0;
+                        employeeOriginalNames[normalizedName] = adv.employeeName;
                     }
-                    employeeAdvances[adv.employeeName] += adv.amount;
+                    employeeAdvances[normalizedName] += adv.amount;
                 }
             });
             
-            // Obtener lista única de empleados
-            const uniqueEmployees = [...new Set(advances.map(a => a.employeeName))].sort();
+            // Obtener lista única de empleados (normalizados)
+            const uniqueEmployeesMap = {};
+            advances.forEach(a => {
+                const normalized = normalizeEmployeeName(a.employeeName);
+                if (!uniqueEmployeesMap[normalized]) {
+                    uniqueEmployeesMap[normalized] = a.employeeName; // Guardar la versión más reciente del nombre
+                }
+            });
+            
+            const uniqueEmployees = Object.values(uniqueEmployeesMap).sort();
             
             const employeesList = document.getElementById('employeesList');
             employeesList.innerHTML = '<p style="margin-bottom: 15px; color: #666;">Los montos ya están calculados descontando adelantos del mes:</p>';
@@ -1253,7 +1339,8 @@
             const baseAmount = parseInt(document.getElementById('bulkAmount').value) || 700000;
             
             uniqueEmployees.forEach(emp => {
-                const previousAdvances = employeeAdvances[emp] || 0;
+                const normalizedName = normalizeEmployeeName(emp);
+                const previousAdvances = employeeAdvances[normalizedName] || 0;
                 const remainingAmount = Math.max(0, baseAmount - previousAdvances);
                 
                 const div = document.createElement('div');
@@ -1287,9 +1374,10 @@
             
             // Agregar resumen
             const totalAdvances = Object.values(employeeAdvances).reduce((sum, val) => sum + val, 0);
-            const totalEmployees = uniqueEmployees.length;
+            const totalEmployees = Object.keys(uniqueEmployeesMap).length;
             const totalToPay = uniqueEmployees.reduce((sum, emp) => {
-                const prev = employeeAdvances[emp] || 0;
+                const normalized = normalizeEmployeeName(emp);
+                const prev = employeeAdvances[normalized] || 0;
                 return sum + Math.max(0, baseAmount - prev);
             }, 0);
             
@@ -1495,22 +1583,50 @@
             console.log(`Monto total calculado: ₲ ${totalCalculated.toLocaleString('es-PY')}`);
             console.log(`Registros con montos inválidos: ${invalidAmounts}`);
             
-            // Mostrar resumen por empleado
-            const employeeSummary = {};
+            // Detectar variaciones de nombres
+            const nameVariations = {};
+            const normalizedToOriginal = {};
+            
             advances.forEach(adv => {
-                if (!employeeSummary[adv.employeeName]) {
-                    employeeSummary[adv.employeeName] = {
-                        count: 0,
-                        total: 0
-                    };
+                const normalized = normalizeEmployeeName(adv.employeeName);
+                if (!normalizedToOriginal[normalized]) {
+                    normalizedToOriginal[normalized] = new Set();
                 }
-                employeeSummary[adv.employeeName].count++;
-                employeeSummary[adv.employeeName].total += parseInt(adv.amount) || 0;
+                normalizedToOriginal[normalized].add(adv.employeeName);
             });
             
-            console.log('Resumen por empleado:');
+            console.log('\n=== ANÁLISIS DE NOMBRES DE EMPLEADOS ===');
+            Object.entries(normalizedToOriginal).forEach(([normalized, originals]) => {
+                if (originals.size > 1) {
+                    console.warn(`Variaciones detectadas para "${normalized}":`);
+                    originals.forEach(original => {
+                        console.log(`  - "${original}"`);
+                    });
+                }
+            });
+            
+            // Mostrar resumen por empleado (usando nombres normalizados)
+            const employeeSummary = {};
+            advances.forEach(adv => {
+                const normalizedName = normalizeEmployeeName(adv.employeeName);
+                if (!employeeSummary[normalizedName]) {
+                    employeeSummary[normalizedName] = {
+                        count: 0,
+                        total: 0,
+                        originalNames: new Set()
+                    };
+                }
+                employeeSummary[normalizedName].count++;
+                employeeSummary[normalizedName].total += parseInt(adv.amount) || 0;
+                employeeSummary[normalizedName].originalNames.add(adv.employeeName);
+            });
+            
+            console.log('\nResumen por empleado (nombres normalizados):');
             Object.entries(employeeSummary).forEach(([name, data]) => {
-                console.log(`- ${name}: ${data.count} adelantos, Total: ₲ ${data.total.toLocaleString('es-PY')}`);
+                const namesStr = data.originalNames.size > 1 
+                    ? ` (variaciones: ${Array.from(data.originalNames).join(', ')})` 
+                    : '';
+                console.log(`- ${Array.from(data.originalNames)[0]}: ${data.count} adelantos, Total: ₲ ${data.total.toLocaleString('es-PY')}${namesStr}`);
             });
             
             // Buscar registros recientes potencialmente duplicados
@@ -1528,12 +1644,117 @@
                 });
             }
             
-            alert(`Verificación completada. 
+            // Detectar posibles duplicados de nombres
+            const possibleDuplicates = [];
+            Object.entries(normalizedToOriginal).forEach(([normalized, originals]) => {
+                if (originals.size > 1) {
+                    possibleDuplicates.push({
+                        normalized,
+                        variations: Array.from(originals)
+                    });
+                }
+            });
+            
+            let alertMessage = `Verificación completada. 
 Total registros: ${advances.length}
 Monto total: ₲ ${totalCalculated.toLocaleString('es-PY')}
-Empleados únicos: ${Object.keys(employeeSummary).length}
+Empleados únicos (normalizados): ${Object.keys(employeeSummary).length}`;
 
-Revise la consola del navegador (F12) para más detalles.`);
+            if (possibleDuplicates.length > 0) {
+                alertMessage += `\n\n⚠️ Se detectaron ${possibleDuplicates.length} empleados con variaciones en el nombre.`;
+            }
+
+            alertMessage += '\n\nRevise la consola del navegador (F12) para más detalles.';
+            
+            alert(alertMessage);
+        }
+
+        // Mostrar diálogo de normalización de nombres
+        function showNameNormalizationDialog() {
+            // Detectar todas las variaciones de nombres
+            const normalizedToOriginal = {};
+            advances.forEach(adv => {
+                const normalized = normalizeEmployeeName(adv.employeeName);
+                if (!normalizedToOriginal[normalized]) {
+                    normalizedToOriginal[normalized] = [];
+                }
+                if (!normalizedToOriginal[normalized].includes(adv.employeeName)) {
+                    normalizedToOriginal[normalized].push(adv.employeeName);
+                }
+            });
+            
+            // Filtrar solo los que tienen variaciones
+            const variations = Object.entries(normalizedToOriginal)
+                .filter(([_, originals]) => originals.length > 1)
+                .map(([normalized, originals]) => ({
+                    normalized,
+                    originals: originals.sort(),
+                    preferred: originals[0] // Por defecto, usar el primero alfabéticamente
+                }));
+            
+            if (variations.length === 0) {
+                alert('✅ No se detectaron variaciones de nombres. Todo está normalizado correctamente.');
+                return;
+            }
+            
+            let message = `Se detectaron ${variations.length} empleados con variaciones en sus nombres:\n\n`;
+            
+            variations.forEach((v, index) => {
+                message += `${index + 1}. Variaciones encontradas:\n`;
+                v.originals.forEach(name => {
+                    message += `   - "${name}"\n`;
+                });
+                message += `   → Se normalizará a: "${v.preferred}"\n\n`;
+            });
+            
+            message += `¿Desea normalizar todos los nombres?\n\n`;
+            message += `⚠️ IMPORTANTE: Esta acción modificará todos los registros. Se recomienda exportar una copia de respaldo primero.`;
+            
+            if (confirm(message)) {
+                normalizeAllNames(variations);
+            }
+        }
+        
+        // Normalizar todos los nombres
+        async function normalizeAllNames(variations) {
+            updateSyncStatus('syncing', 'Normalizando nombres...');
+            
+            const normalizations = {};
+            variations.forEach(v => {
+                v.originals.forEach(original => {
+                    if (original !== v.preferred) {
+                        normalizations[original] = v.preferred;
+                    }
+                });
+            });
+            
+            let updateCount = 0;
+            const totalToUpdate = advances.filter(a => normalizations[a.employeeName]).length;
+            
+            if (totalToUpdate === 0) {
+                alert('No hay nombres para normalizar.');
+                return;
+            }
+            
+            // Actualizar localmente primero
+            advances.forEach(advance => {
+                if (normalizations[advance.employeeName]) {
+                    advance.employeeName = normalizations[advance.employeeName];
+                    updateCount++;
+                }
+            });
+            
+            // Guardar cambios
+            localStorage.setItem('advances_backup', JSON.stringify(advances));
+            
+            // Actualizar la vista
+            renderAll();
+            
+            updateSyncStatus('success', 'Nombres normalizados');
+            showNotification(`✅ Se normalizaron ${updateCount} registros exitosamente`);
+            
+            // Nota: En producción, aquí deberías enviar los cambios a Google Sheets
+            alert(`Se normalizaron ${updateCount} registros.\n\n⚠️ NOTA: Los cambios están guardados localmente. Para sincronizar con Google Sheets, deberá actualizar manualmente cada registro o implementar una función de actualización masiva en el backend.`);
         }
     </script>
 </body>
