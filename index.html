@@ -169,6 +169,10 @@
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .button-group:last-of-type {
             margin-bottom: 20px;
         }
 
@@ -195,6 +199,7 @@
             background: white;
             border-radius: 8px;
             overflow: hidden;
+            min-width: 800px;
         }
 
         th, td {
@@ -207,10 +212,16 @@
             background: #f8f9fa;
             font-weight: 600;
             color: #555;
+            white-space: nowrap;
         }
 
         tr:hover {
             background: #f8f9fa;
+        }
+
+        td small {
+            display: block;
+            line-height: 1.4;
         }
 
         .actions {
@@ -437,11 +448,75 @@
             <h3>⚠️ Configuración Requerida</h3>
             <p>Para usar este sistema, necesitas configurar Google Sheets:</p>
             <ol>
-                <li>Copia el código de Google Apps Script que está abajo</li>
                 <li>Crea una nueva hoja de Google Sheets</li>
                 <li>Ve a Extensiones → Apps Script</li>
-                <li>Pega el código y guarda</li>
-                <li>Despliega como Web App</li>
+                <li>Pega el siguiente código:</li>
+            </ol>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">
+// Código de Google Apps Script
+function doGet(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const data = sheet.getDataRange().getValues();
+  
+  // Convertir datos a JSON (omitir encabezados)
+  const jsonData = [];
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0]) { // Si hay ID
+      jsonData.push({
+        id: data[i][0],
+        date: data[i][1],
+        employeeName: data[i][2],
+        amount: data[i][3],
+        notes: data[i][4],
+        registeredBy: data[i][5],
+        registeredAt: data[i][6],
+        modifiedBy: data[i][7],
+        modifiedAt: data[i][8]
+      });
+    }
+  }
+  
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: 'success', data: jsonData }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const params = JSON.parse(e.postData.contents);
+  
+  if (params.action === 'create') {
+    const newRow = [
+      Date.now(), // ID
+      params.date,
+      params.employeeName,
+      params.amount,
+      params.notes || '',
+      params.registeredBy || '',
+      params.registeredAt || new Date().toISOString(),
+      '', // modifiedBy
+      ''  // modifiedAt
+    ];
+    sheet.appendRow(newRow);
+    
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'success', id: newRow[0] }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Agregar encabezados si la hoja está vacía
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['ID', 'Fecha', 'Empleado', 'Monto', 'Notas', 'Registrado Por', 'Fecha Registro', 'Modificado Por', 'Fecha Modificación']);
+  }
+  
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: 'success' }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+</pre>
+            <ol start="4">
+                <li>Guarda el script</li>
+                <li>Despliega como Web App (Ejecutar como: Yo, Acceso: Cualquiera)</li>
                 <li>Copia la URL y pégala en el campo de abajo</li>
             </ol>
             <div class="form-group">
@@ -517,8 +592,11 @@
                 <button class="btn-secondary" onclick="refreshData()">🔄 Actualizar</button>
                 <button class="btn-secondary" onclick="openBulkPayment()">💳 Pago Masivo</button>
                 <button class="btn-secondary" onclick="changeUser()">👤 Cambiar Usuario</button>
+            </div>
+            <div class="button-group">
                 <button class="btn-secondary" onclick="checkDataIntegrity()" style="background: #ff9800;">🔍 Verificar Datos</button>
                 <button class="btn-secondary" onclick="showNameNormalizationDialog()" style="background: #9c27b0;">🔧 Normalizar Nombres</button>
+                <button class="btn-secondary" onclick="showUpdateOldRecordsDialog()" style="background: #3f51b5;">📋 Actualizar Registros Antiguos</button>
             </div>
             <div id="dateAdvancesInfo"></div>
             <div class="table-container">
@@ -531,6 +609,7 @@
                             <th>Monto</th>
                             <th>Anotaciones</th>
                             <th>Registrado por</th>
+                            <th>Última modificación</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -921,13 +1000,20 @@
                 modifiedAt: new Date().toISOString()
             };
 
+            // Mantener información original
+            const originalAdvance = advances.find(a => a.id === editingId);
+            if (originalAdvance) {
+                advance.registeredBy = originalAdvance.registeredBy;
+                advance.registeredAt = originalAdvance.registeredAt;
+            }
+
             const result = await saveToSheets('update', advance);
             
             if (result) {
                 // Recargar datos desde Google Sheets en lugar de actualizar localmente
                 await loadData();
                 closeModal();
-                showNotification('Adelanto actualizado');
+                showNotification(`Adelanto actualizado por ${currentUser}`);
             }
         }
 
@@ -995,8 +1081,19 @@
 
             filteredAdvances.forEach(advance => {
                 const row = tbody.insertRow();
+                
+                // Información de registro original
                 const registeredBy = advance.registeredBy || 'Sistema anterior';
-                const registeredAt = advance.registeredAt ? new Date(advance.registeredAt).toLocaleDateString('es-ES') : '';
+                const registeredAt = advance.registeredAt ? formatDateTime(advance.registeredAt) : '';
+                
+                // Información de última modificación
+                let lastModifiedInfo = '-';
+                if (advance.modifiedBy && advance.modifiedAt) {
+                    lastModifiedInfo = `<small style="color: #666;">
+                        ${advance.modifiedBy}<br>
+                        ${formatDateTime(advance.modifiedAt)}
+                    </small>`;
+                }
                 
                 row.innerHTML = `
                     <td>${formatDate(advance.date)}</td>
@@ -1009,6 +1106,7 @@
                             ${registeredAt ? '<br>' + registeredAt : ''}
                         </small>
                     </td>
+                    <td>${lastModifiedInfo}</td>
                     <td class="actions">
                         <button class="btn-small btn-secondary" onclick="editAdvance(${advance.id})">✏️</button>
                         <button class="btn-small btn-danger" onclick="deleteAdvance(${advance.id})">🗑️</button>
@@ -1124,11 +1222,21 @@
                 `;
                 
                 dayAdvances.forEach(a => {
+                    const registeredInfo = a.registeredBy 
+                        ? `Registrado por: ${a.registeredBy}` 
+                        : 'Sistema anterior';
+                    const modifiedInfo = a.modifiedBy 
+                        ? `<br>Última modificación: ${a.modifiedBy} (${formatDateTime(a.modifiedAt)})` 
+                        : '';
+                    
                     html += `
                         <div class="date-advance-item">
                             <strong>${a.employeeName}</strong><br>
                             <span style="color: #667eea; font-size: 1.2em;">₲ ${a.amount.toLocaleString('es-PY')}</span><br>
-                            <small style="color: #666;">${a.notes || 'Sin anotaciones'}</small>
+                            <small style="color: #666;">${a.notes || 'Sin anotaciones'}</small><br>
+                            <small style="color: #999; font-style: italic;">
+                                ${registeredInfo}${modifiedInfo}
+                            </small>
                         </div>
                     `;
                 });
@@ -1187,6 +1295,26 @@
             }
         }
 
+        // Formatear fecha y hora
+        function formatDateTime(dateTimeString) {
+            if (!dateTimeString) return '';
+            
+            try {
+                const date = new Date(dateTimeString);
+                if (isNaN(date.getTime())) return '';
+                
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                
+                return `${day}/${month}/${year} ${hours}:${minutes}`;
+            } catch (e) {
+                return '';
+            }
+        }
+
         function previousMonth() {
             currentDate.setMonth(currentDate.getMonth() - 1);
             updateCalendar();
@@ -1239,7 +1367,7 @@
         }
 
         function exportToExcel() {
-            const ws_data = [['Fecha', 'Empleado', 'Monto (₲)', 'Anotaciones', 'Registrado por', 'Fecha de registro']];
+            const ws_data = [['Fecha', 'Empleado', 'Monto (₲)', 'Anotaciones', 'Registrado por', 'Fecha de registro', 'Modificado por', 'Fecha de modificación']];
             
             advances.forEach(advance => {
                 ws_data.push([
@@ -1248,7 +1376,9 @@
                     advance.amount,
                     advance.notes || '',
                     advance.registeredBy || 'Sistema anterior',
-                    advance.registeredAt ? new Date(advance.registeredAt).toLocaleDateString('es-ES') : ''
+                    advance.registeredAt ? formatDateTime(advance.registeredAt) : '',
+                    advance.modifiedBy || '',
+                    advance.modifiedAt ? formatDateTime(advance.modifiedAt) : ''
                 ]);
             });
             
@@ -1259,7 +1389,7 @@
             const filename = `adelantos_sheets_${new Date().toISOString().split('T')[0]}.xlsx`;
             XLSX.writeFile(wb, filename);
             
-            showNotification('Datos exportados a Excel');
+            showNotification('Datos exportados a Excel con información completa de auditoría');
         }
 
         function showNotification(message) {
@@ -1667,6 +1797,54 @@ Empleados únicos (normalizados): ${Object.keys(employeeSummary).length}`;
             alertMessage += '\n\nRevise la consola del navegador (F12) para más detalles.';
             
             alert(alertMessage);
+        }
+
+        // Mostrar diálogo para actualizar registros antiguos
+        function showUpdateOldRecordsDialog() {
+            const oldRecords = advances.filter(a => !a.registeredBy || a.registeredBy === 'Sistema anterior');
+            
+            if (oldRecords.length === 0) {
+                alert('✅ No hay registros del sistema anterior. Todos los registros tienen información de auditoría.');
+                return;
+            }
+            
+            const message = `Se encontraron ${oldRecords.length} registros del sistema anterior sin información de usuario.\n\n` +
+                          `¿Desea asignar estos registros a "${currentUser}"?\n\n` +
+                          `⚠️ NOTA: Esta acción es solo para propósitos de auditoría. Los registros mantendrán su fecha original.`;
+            
+            if (confirm(message)) {
+                updateOldRecords(oldRecords);
+            }
+        }
+        
+        // Actualizar registros antiguos
+        async function updateOldRecords(oldRecords) {
+            updateSyncStatus('syncing', 'Actualizando registros...');
+            
+            let updateCount = 0;
+            const now = new Date().toISOString();
+            
+            // Actualizar localmente
+            oldRecords.forEach(record => {
+                record.registeredBy = currentUser;
+                record.registeredAt = record.registeredAt || now;
+                record.modifiedBy = currentUser;
+                record.modifiedAt = now;
+                updateCount++;
+            });
+            
+            // Guardar cambios localmente
+            localStorage.setItem('advances_backup', JSON.stringify(advances));
+            
+            // Actualizar la vista
+            renderAll();
+            
+            updateSyncStatus('success', 'Registros actualizados');
+            showNotification(`✅ Se actualizaron ${updateCount} registros del sistema anterior`);
+            
+            alert(`Se actualizaron ${updateCount} registros.\n\n` +
+                  `Los registros ahora aparecen como registrados por: ${currentUser}\n\n` +
+                  `⚠️ NOTA: Los cambios están guardados localmente.`);
         }
 
         // Mostrar diálogo de normalización de nombres
