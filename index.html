@@ -855,7 +855,9 @@
                 date: document.getElementById('editDate').value,
                 employeeName: document.getElementById('editEmployeeName').value,
                 amount: parseInt(document.getElementById('editAmount').value),
-                notes: document.getElementById('editNotes').value
+                notes: document.getElementById('editNotes').value,
+                modifiedBy: currentUser,
+                modifiedAt: new Date().toISOString()
             };
 
             const result = await saveToSheets('update', advance);
@@ -863,6 +865,9 @@
             if (result) {
                 const index = advances.findIndex(a => a.id === editingId);
                 if (index !== -1) {
+                    // Mantener los datos originales de registro
+                    advance.registeredBy = advances[index].registeredBy;
+                    advance.registeredAt = advances[index].registeredAt;
                     advances[index] = advance;
                     renderAll();
                     closeModal();
@@ -1133,14 +1138,16 @@
         }
 
         function exportToExcel() {
-            const ws_data = [['Fecha', 'Empleado', 'Monto (₲)', 'Anotaciones']];
+            const ws_data = [['Fecha', 'Empleado', 'Monto (₲)', 'Anotaciones', 'Registrado por', 'Fecha de registro']];
             
             advances.forEach(advance => {
                 ws_data.push([
                     advance.date,
                     advance.employeeName,
                     advance.amount,
-                    advance.notes || ''
+                    advance.notes || '',
+                    advance.registeredBy || 'Sistema anterior',
+                    advance.registeredAt ? new Date(advance.registeredAt).toLocaleDateString('es-ES') : ''
                 ]);
             });
             
@@ -1349,7 +1356,9 @@
                             date: bulkDate,
                             employeeName: checkbox.value,
                             amount: amount,
-                            notes: 'Pago mensual (adelanto descontado)'
+                            notes: 'Pago mensual (adelanto descontado)',
+                            registeredBy: currentUser,
+                            registeredAt: new Date().toISOString()
                         });
                     }
                 }
@@ -1367,7 +1376,9 @@
                             date: bulkDate,
                             employeeName: nameInput.value.trim(),
                             amount: amount,
-                            notes: 'Pago mensual'
+                            notes: 'Pago mensual',
+                            registeredBy: currentUser,
+                            registeredAt: new Date().toISOString()
                         });
                     }
                 }
@@ -1380,46 +1391,53 @@
             
             const totalAmount = advancesToCreate.reduce((sum, adv) => sum + adv.amount, 0);
             
-            if (!confirm(`¿Confirma el pago masivo?\n\nEmpleados: ${advancesToCreate.length}\nTotal a pagar: ₲ ${totalAmount.toLocaleString('es-PY')}`)) {
+            if (!confirm(`¿Confirma el pago masivo?\n\nEmpleados: ${advancesToCreate.length}\nTotal a pagar: ₲ ${totalAmount.toLocaleString('es-PY')}\n\nRegistrado por: ${currentUser}`)) {
                 return;
             }
             
-            // Enviar a Google Sheets
+            // Procesar pagos uno por uno
             updateSyncStatus('syncing', 'Procesando pagos...');
             
-            try {
-                const response = await fetch(WEB_APP_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'text/plain',
-                    },
-                    body: JSON.stringify({ 
-                        action: 'createBulk', 
-                        advances: advancesToCreate 
-                    })
-                });
-                
-                // Agregar localmente
-                advancesToCreate.forEach(adv => {
-                    adv.id = Date.now() + Math.random();
-                    advances.push(adv);
-                });
-                
-                saveToLocalStorage();
-                renderAll();
-                closeBulkModal();
-                showNotification(`${advancesToCreate.length} pagos procesados - Total: ₲ ${totalAmount.toLocaleString('es-PY')}`);
-                updateSyncStatus('success', 'Pagos procesados');
-                
-                // Recargar datos después de 2 segundos
-                setTimeout(() => loadData(), 2000);
-                
-            } catch (error) {
-                console.error('Error:', error);
-                showNotification('Error al procesar pagos masivos');
-                updateSyncStatus('error', 'Error');
+            let successCount = 0;
+            let errorCount = 0;
+            
+            for (const advance of advancesToCreate) {
+                try {
+                    const result = await saveToSheets('create', advance);
+                    
+                    if (result && result.id) {
+                        advance.id = result.id;
+                        advances.push(advance);
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
+                } catch (error) {
+                    console.error('Error procesando adelanto:', error);
+                    errorCount++;
+                }
             }
+            
+            // Actualizar la vista
+            renderAll();
+            closeBulkModal();
+            
+            // Mostrar resultado
+            if (errorCount === 0) {
+                showNotification(`✅ ${successCount} pagos procesados exitosamente - Total: ₲ ${totalAmount.toLocaleString('es-PY')}`);
+                updateSyncStatus('success', 'Pagos procesados');
+            } else {
+                showNotification(`⚠️ Procesados: ${successCount}, Errores: ${errorCount}`);
+                updateSyncStatus('error', `${errorCount} errores`);
+            }
+            
+            // Guardar backup local
+            localStorage.setItem('advances_backup', JSON.stringify(advances));
+            
+            // Recargar datos después de 3 segundos para sincronizar con Google Sheets
+            setTimeout(() => {
+                loadData();
+            }, 3000);
         }
 
         function saveToLocalStorage() {
