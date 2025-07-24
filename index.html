@@ -512,6 +512,7 @@
                 <button class="btn-secondary" onclick="refreshData()">🔄 Actualizar</button>
                 <button class="btn-secondary" onclick="openBulkPayment()">💳 Pago Masivo</button>
                 <button class="btn-secondary" onclick="changeUser()">👤 Cambiar Usuario</button>
+                <button class="btn-secondary" onclick="checkDataIntegrity()" style="background: #ff9800;">🔍 Verificar Datos</button>
             </div>
             <div id="dateAdvancesInfo"></div>
             <div class="table-container">
@@ -721,19 +722,37 @@
                     const result = await response.json();
                     
                     if (result.status === 'success') {
-                        advances = result.data.map(item => {
-                            // Limpiar formato de fecha si viene con hora
-                            if (item.date && typeof item.date === 'string' && item.date.includes('T')) {
-                                item.date = item.date.split('T')[0];
+                        // Limpiar array antes de cargar nuevos datos
+                        advances = [];
+                        
+                        // Procesar y validar cada registro
+                        const seenIds = new Set();
+                        result.data.forEach(item => {
+                            // Evitar duplicados por ID
+                            if (item.id && !seenIds.has(item.id)) {
+                                seenIds.add(item.id);
+                                
+                                // Limpiar formato de fecha si viene con hora
+                                if (item.date && typeof item.date === 'string' && item.date.includes('T')) {
+                                    item.date = item.date.split('T')[0];
+                                }
+                                
+                                // Validar que el monto sea un número válido
+                                if (item.amount && !isNaN(parseInt(item.amount))) {
+                                    item.amount = parseInt(item.amount);
+                                    advances.push(item);
+                                }
                             }
-                            return item;
                         });
+                        
                         renderAll();
                         updateSyncStatus('success', 'Sincronizado');
                         setTimeout(() => updateSyncStatus('', '✓ En línea'), 2000);
                         
                         // Guardar backup local
                         localStorage.setItem('advances_backup', JSON.stringify(advances));
+                        
+                        console.log(`Cargados ${advances.length} adelantos únicos`);
                     }
                 }
             } catch (error) {
@@ -835,9 +854,9 @@
             const result = await saveToSheets('create', advance);
             
             if (result && result.id) {
-                advance.id = result.id;
-                advances.push(advance);
-                renderAll();
+                // Recargar datos desde Google Sheets en lugar de agregar localmente
+                // Esto evita duplicados
+                await loadData();
                 
                 document.getElementById('advanceForm').reset();
                 document.getElementById('date').value = new Date().toISOString().split('T')[0];
@@ -863,16 +882,10 @@
             const result = await saveToSheets('update', advance);
             
             if (result) {
-                const index = advances.findIndex(a => a.id === editingId);
-                if (index !== -1) {
-                    // Mantener los datos originales de registro
-                    advance.registeredBy = advances[index].registeredBy;
-                    advance.registeredAt = advances[index].registeredAt;
-                    advances[index] = advance;
-                    renderAll();
-                    closeModal();
-                    showNotification('Adelanto actualizado');
-                }
+                // Recargar datos desde Google Sheets en lugar de actualizar localmente
+                await loadData();
+                closeModal();
+                showNotification('Adelanto actualizado');
             }
         }
 
@@ -883,8 +896,8 @@
             const result = await saveToSheets('delete', { id });
             
             if (result) {
-                advances = advances.filter(a => a.id !== id);
-                renderAll();
+                // Recargar datos desde Google Sheets en lugar de eliminar localmente
+                await loadData();
                 showNotification('Adelanto eliminado');
             }
         }
@@ -1002,13 +1015,27 @@
 
         // Actualizar estadísticas
         function updateStats() {
-            const totalAdvances = advances.length;
-            const totalAmount = advances.reduce((sum, a) => sum + a.amount, 0);
-            const uniqueEmployees = new Set(advances.map(a => a.employeeName)).size;
+            // Filtrar solo adelantos válidos con montos numéricos
+            const validAdvances = advances.filter(a => a.amount && !isNaN(a.amount));
+            
+            const totalAdvances = validAdvances.length;
+            const totalAmount = validAdvances.reduce((sum, a) => {
+                const amount = parseInt(a.amount) || 0;
+                return sum + amount;
+            }, 0);
+            const uniqueEmployees = new Set(validAdvances.map(a => a.employeeName)).size;
             
             document.getElementById('totalAdvances').textContent = totalAdvances;
             document.getElementById('totalAmount').textContent = `₲ ${totalAmount.toLocaleString('es-PY')}`;
             document.getElementById('totalEmployees').textContent = uniqueEmployees;
+            
+            // Log para depuración
+            console.log('Estadísticas actualizadas:', {
+                totalRegistros: advances.length,
+                registrosValidos: validAdvances.length,
+                montoTotal: totalAmount,
+                empleadosUnicos: uniqueEmployees
+            });
         }
 
         // Mostrar adelantos de fecha
@@ -1401,13 +1428,16 @@
             let successCount = 0;
             let errorCount = 0;
             
+            // NO agregar localmente hasta confirmar éxito
+            const tempAdvances = [];
+            
             for (const advance of advancesToCreate) {
                 try {
                     const result = await saveToSheets('create', advance);
                     
                     if (result && result.id) {
                         advance.id = result.id;
-                        advances.push(advance);
+                        tempAdvances.push(advance);
                         successCount++;
                     } else {
                         errorCount++;
@@ -1418,8 +1448,7 @@
                 }
             }
             
-            // Actualizar la vista
-            renderAll();
+            // Cerrar modal primero
             closeBulkModal();
             
             // Mostrar resultado
@@ -1431,17 +1460,80 @@
                 updateSyncStatus('error', `${errorCount} errores`);
             }
             
-            // Guardar backup local
-            localStorage.setItem('advances_backup', JSON.stringify(advances));
-            
-            // Recargar datos después de 3 segundos para sincronizar con Google Sheets
-            setTimeout(() => {
-                loadData();
-            }, 3000);
+            // Recargar datos inmediatamente desde Google Sheets para evitar duplicados
+            await loadData();
         }
 
         function saveToLocalStorage() {
             localStorage.setItem('advances_backup', JSON.stringify(advances));
+        }
+
+        // Función para verificar integridad de datos
+        function checkDataIntegrity() {
+            console.log('=== VERIFICACIÓN DE INTEGRIDAD DE DATOS ===');
+            console.log(`Total de registros: ${advances.length}`);
+            
+            // Buscar duplicados por ID
+            const ids = advances.map(a => a.id);
+            const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index);
+            if (duplicateIds.length > 0) {
+                console.warn('IDs duplicados encontrados:', duplicateIds);
+            }
+            
+            // Verificar montos
+            let invalidAmounts = 0;
+            let totalCalculated = 0;
+            advances.forEach((adv, index) => {
+                if (!adv.amount || isNaN(adv.amount)) {
+                    console.warn(`Registro ${index} tiene monto inválido:`, adv);
+                    invalidAmounts++;
+                } else {
+                    totalCalculated += parseInt(adv.amount);
+                }
+            });
+            
+            console.log(`Monto total calculado: ₲ ${totalCalculated.toLocaleString('es-PY')}`);
+            console.log(`Registros con montos inválidos: ${invalidAmounts}`);
+            
+            // Mostrar resumen por empleado
+            const employeeSummary = {};
+            advances.forEach(adv => {
+                if (!employeeSummary[adv.employeeName]) {
+                    employeeSummary[adv.employeeName] = {
+                        count: 0,
+                        total: 0
+                    };
+                }
+                employeeSummary[adv.employeeName].count++;
+                employeeSummary[adv.employeeName].total += parseInt(adv.amount) || 0;
+            });
+            
+            console.log('Resumen por empleado:');
+            Object.entries(employeeSummary).forEach(([name, data]) => {
+                console.log(`- ${name}: ${data.count} adelantos, Total: ₲ ${data.total.toLocaleString('es-PY')}`);
+            });
+            
+            // Buscar registros recientes potencialmente duplicados
+            const recentDate = new Date();
+            recentDate.setHours(recentDate.getHours() - 1); // Última hora
+            const recentAdvances = advances.filter(a => {
+                const advDate = new Date(a.registeredAt || a.date);
+                return advDate > recentDate;
+            });
+            
+            if (recentAdvances.length > 0) {
+                console.log(`\nAdelantos registrados en la última hora: ${recentAdvances.length}`);
+                recentAdvances.forEach(adv => {
+                    console.log(`- ${adv.employeeName}: ₲ ${adv.amount.toLocaleString('es-PY')} (${adv.date})`);
+                });
+            }
+            
+            alert(`Verificación completada. 
+Total registros: ${advances.length}
+Monto total: ₲ ${totalCalculated.toLocaleString('es-PY')}
+Empleados únicos: ${Object.keys(employeeSummary).length}
+
+Revise la consola del navegador (F12) para más detalles.`);
         }
     </script>
 </body>
