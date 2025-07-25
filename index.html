@@ -1,458 +1,455 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sistema de Adelantos - Google Sheets</title>
-<style>
-* {
-margin: 0;
-padding: 0;
-box-sizing: border-box;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Adelantos - Google Sheets</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-body {
-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-background-color: #f5f5f5;
-color: #333;
-line-height: 1.6;
-}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
 
-.container {
-max-width: 1200px;
-margin: 0 auto;
-padding: 20px;
-}
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
 
-header {
-background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-color: white;
-padding: 30px 0;
-text-align: center;
-border-radius: 10px;
-margin-bottom: 30px;
-box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 0;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
 
-h1 {
-font-size: 2.5em;
-margin-bottom: 10px;
-}
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
 
-.setup-notice {
-background: #fff3cd;
-border: 2px solid #ffc107;
-border-radius: 10px;
-padding: 20px;
-margin-bottom: 30px;
-display: none;
-}
+        .setup-notice {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: none;
+        }
 
-.setup-notice h3 {
-color: #856404;
-margin-bottom: 10px;
-}
+        .setup-notice h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
 
-.main-grid {
-display: grid;
-grid-template-columns: 1fr 1fr;
-gap: 30px;
-margin-bottom: 30px;
-}
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
 
-@media (max-width: 768px) {
-.main-grid {
-grid-template-columns: 1fr;
-}
-}
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
 
-.card {
-background: white;
-border-radius: 10px;
-padding: 25px;
-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-}
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
 
-.form-group {
-margin-bottom: 20px;
-}
+        .form-group {
+            margin-bottom: 20px;
+        }
 
-label {
-display: block;
-font-weight: 600;
-margin-bottom: 8px;
-color: #555;
-}
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
 
-input, textarea, select {
-width: 100%;
-padding: 12px;
-border: 2px solid #e0e0e0;
-border-radius: 8px;
-font-size: 16px;
-transition: border-color 0.3s;
-}
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
 
-input:focus, textarea:focus, select:focus {
-outline: none;
-border-color: #667eea;
-}
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
 
-textarea {
-resize: vertical;
-min-height: 100px;
-}
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
 
-button {
-background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-color: white;
-border: none;
-padding: 12px 30px;
-border-radius: 8px;
-font-size: 16px;
-font-weight: 600;
-cursor: pointer;
-transition: transform 0.2s, box-shadow 0.2s;
-}
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
 
-button:hover {
-transform: translateY(-2px);
-box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-}
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
 
-button:disabled {
-opacity: 0.6;
-cursor: not-allowed;
-}
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
 
-.sync-status {
-position: fixed;
-top: 20px;
-right: 20px;
-background: white;
-padding: 10px 20px;
-border-radius: 20px;
-box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-display: flex;
-align-items: center;
-gap: 10px;
-z-index: 1000;
-}
+        .sync-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+        }
 
-.sync-status.syncing {
-background: #e3f2fd;
-}
+        .sync-status.syncing {
+            background: #e3f2fd;
+        }
 
-.sync-status.error {
-background: #ffebee;
-}
+        .sync-status.error {
+            background: #ffebee;
+        }
 
-.sync-status.success {
-background: #e8f5e9;
-}
+        .sync-status.success {
+            background: #e8f5e9;
+        }
 
-.spinner {
-width: 20px;
-height: 20px;
-border: 2px solid #f3f3f3;
-border-top: 2px solid #667eea;
-border-radius: 50%;
-animation: spin 1s linear infinite;
-}
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
 
-@keyframes spin {
-0% { transform: rotate(0deg); }
-100% { transform: rotate(360deg); }
-}
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
-.button-group {
-display: flex;
-gap: 10px;
-flex-wrap: wrap;
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
             margin-bottom: 10px;
         }
 
         .button-group:last-of-type {
-margin-bottom: 20px;
-}
+            margin-bottom: 20px;
+        }
 
-.btn-secondary {
-background: #6c757d;
-}
+        .btn-secondary {
+            background: #6c757d;
+        }
 
-.btn-danger {
-background: #dc3545;
-}
+        .btn-danger {
+            background: #dc3545;
+        }
 
-.btn-success {
-background: #28a745;
-}
+        .btn-success {
+            background: #28a745;
+        }
 
-.table-container {
-overflow-x: auto;
-margin-top: 20px;
-}
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
 
-table {
-width: 100%;
-border-collapse: collapse;
-background: white;
-border-radius: 8px;
-overflow: hidden;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
             min-width: 800px;
-}
+        }
 
-th, td {
-padding: 12px;
-text-align: left;
-border-bottom: 1px solid #e0e0e0;
-}
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
 
-th {
-background: #f8f9fa;
-font-weight: 600;
-color: #555;
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #555;
             white-space: nowrap;
-}
+        }
 
-tr:hover {
-background: #f8f9fa;
-}
+        tr:hover {
+            background: #f8f9fa;
+        }
 
         td small {
             display: block;
             line-height: 1.4;
         }
 
-.actions {
-display: flex;
-gap: 5px;
-}
+        .actions {
+            display: flex;
+            gap: 5px;
+        }
 
-.btn-small {
-padding: 5px 10px;
-font-size: 14px;
-}
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
 
-.calendar {
-display: grid;
-grid-template-columns: repeat(7, 1fr);
-gap: 5px;
-margin-top: 20px;
-}
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-top: 20px;
+        }
 
-.calendar-header {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 20px;
-}
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
 
-.calendar-day {
-aspect-ratio: 1;
-display: flex;
-align-items: center;
-justify-content: center;
-border: 1px solid #e0e0e0;
-border-radius: 5px;
-cursor: pointer;
-position: relative;
-background: white;
-transition: all 0.3s;
-}
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            cursor: pointer;
+            position: relative;
+            background: white;
+            transition: all 0.3s;
+        }
 
-.calendar-day:hover {
-background: #f8f9fa;
-transform: scale(1.05);
-}
+        .calendar-day:hover {
+            background: #f8f9fa;
+            transform: scale(1.05);
+        }
 
-.calendar-day.other-month {
-color: #ccc;
-}
+        .calendar-day.other-month {
+            color: #ccc;
+        }
 
-.calendar-day.selected {
-background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-color: white;
-}
+        .calendar-day.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
 
-.calendar-day.has-advance {
-background: #e3f2fd;
-font-weight: bold;
-}
+        .calendar-day.has-advance {
+            background: #e3f2fd;
+            font-weight: bold;
+        }
 
-.day-label {
-font-weight: bold;
-text-align: center;
-padding: 10px;
-background: #f8f9fa;
-border-radius: 5px;
-}
+        .day-label {
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
 
-.stats {
-display: grid;
-grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-gap: 20px;
-margin-bottom: 30px;
-}
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
 
-.stat-card {
-background: white;
-padding: 20px;
-border-radius: 10px;
-text-align: center;
-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-}
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
 
-.stat-number {
-font-size: 2em;
-font-weight: bold;
-color: #667eea;
-}
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
 
-.loading {
-text-align: center;
-padding: 40px;
-color: #666;
-}
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
 
-.date-advances {
-background: #f0f4ff;
-border: 2px solid #667eea;
-border-radius: 10px;
-padding: 20px;
-margin: 20px 0;
-animation: fadeIn 0.3s ease-out;
-}
+        .date-advances {
+            background: #f0f4ff;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            animation: fadeIn 0.3s ease-out;
+        }
 
-.date-advances h3 {
-color: #667eea;
-margin-bottom: 15px;
-}
+        .date-advances h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
 
-.date-advance-item {
-background: white;
-padding: 15px;
-border-radius: 8px;
-margin-bottom: 10px;
-box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
+        .date-advance-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
 
-.filter-buttons {
-display: flex;
-gap: 10px;
-margin-bottom: 20px;
-flex-wrap: wrap;
-}
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
 
-.filter-btn {
-padding: 8px 16px;
-border: 2px solid #e0e0e0;
-background: white;
-border-radius: 20px;
-cursor: pointer;
-transition: all 0.3s;
-font-size: 14px;
-}
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
 
-.filter-btn.active {
-background: #667eea;
-color: white;
-border-color: #667eea;
-}
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
 
-@keyframes fadeIn {
-from { opacity: 0; transform: translateY(20px); }
-to { opacity: 1; transform: translateY(0); }
-}
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-.fade-in {
-animation: fadeIn 0.5s ease-out;
-}
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
 
-.modal {
-display: none;
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background: rgba(0,0,0,0.5);
-z-index: 1000;
-justify-content: center;
-align-items: center;
-}
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
 
-.modal-content {
-background: white;
-padding: 30px;
-border-radius: 10px;
-max-width: 500px;
-width: 90%;
-max-height: 90vh;
-overflow-y: auto;
-}
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
 
-.close {
-float: right;
-font-size: 28px;
-font-weight: bold;
-cursor: pointer;
-color: #999;
-}
+        .close {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #999;
+        }
 
-.close:hover {
-color: #333;
-}
+        .close:hover {
+            color: #333;
+        }
 
-.search-box {
-margin-bottom: 20px;
-}
+        .search-box {
+            margin-bottom: 20px;
+        }
 
-#employeesList label {
-padding: 10px;
-border-radius: 5px;
-transition: background 0.2s;
-}
+        #employeesList label {
+            padding: 10px;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
 
-#employeesList label:hover {
-background: #f0f0f0;
-}
+        #employeesList label:hover {
+            background: #f0f0f0;
+        }
 
-.name-warning {
-background: #fff3cd;
-border: 1px solid #ffc107;
-border-radius: 5px;
-padding: 8px;
-margin-top: 5px;
-font-size: 14px;
-color: #856404;
-}
-</style>
+        .name-warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 5px;
+            padding: 8px;
+            margin-top: 5px;
+            font-size: 14px;
+            color: #856404;
+        }
+    </style>
 </head>
 <body>
-<div class="sync-status" id="syncStatus">
-<span id="syncText">Conectando...</span>
-<div class="spinner" id="syncSpinner"></div>
-</div>
+    <div class="sync-status" id="syncStatus">
+        <span id="syncText">Conectando...</span>
+        <div class="spinner" id="syncSpinner"></div>
+    </div>
 
-<div class="container">
-<header class="fade-in">
-<h1>💰 Sistema de Adelantos - Google Sheets</h1>
-<p>Sincronización automática en la nube</p>
-<div id="userInfo" style="margin-top: 10px; font-size: 14px; opacity: 0.9;">
-Usuario: <span id="currentUser" style="font-weight: bold;">No identificado</span>
-</div>
-</header>
+    <div class="container">
+        <header class="fade-in">
+            <h1>💰 Sistema de Adelantos - Google Sheets</h1>
+            <p>Sincronización automática en la nube</p>
+            <div id="userInfo" style="margin-top: 10px; font-size: 14px; opacity: 0.9;">
+                Usuario: <span id="currentUser" style="font-weight: bold;">No identificado</span>
+            </div>
+        </header>
 
-<div class="setup-notice" id="setupNotice">
-<h3>⚠️ Configuración Requerida</h3>
-<p>Para usar este sistema, necesitas configurar Google Sheets:</p>
-<ol>
-                <li>Copia el código de Google Apps Script que está abajo</li>
-<li>Crea una nueva hoja de Google Sheets</li>
-<li>Ve a Extensiones → Apps Script</li>
-                <li>Pega el código y guarda</li>
-                <li>Despliega como Web App</li>
+        <div class="setup-notice" id="setupNotice">
+            <h3>⚠️ Configuración Requerida</h3>
+            <p>Para usar este sistema, necesitas configurar Google Sheets:</p>
+            <ol>
+                <li>Crea una nueva hoja de Google Sheets</li>
+                <li>Ve a Extensiones → Apps Script</li>
                 <li>Pega el siguiente código:</li>
             </ol>
             <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">
@@ -520,488 +517,488 @@ function doPost(e) {
             <ol start="4">
                 <li>Guarda el script</li>
                 <li>Despliega como Web App (Ejecutar como: Yo, Acceso: Cualquiera)</li>
-<li>Copia la URL y pégala en el campo de abajo</li>
-</ol>
-<div class="form-group">
-<label for="webAppUrl">URL de tu Web App:</label>
-<input type="text" id="webAppUrl" placeholder="https://script.google.com/macros/s/...">
-<button onclick="saveWebAppUrl()" style="margin-top: 10px;">Guardar URL</button>
-</div>
-</div>
+                <li>Copia la URL y pégala en el campo de abajo</li>
+            </ol>
+            <div class="form-group">
+                <label for="webAppUrl">URL de tu Web App:</label>
+                <input type="text" id="webAppUrl" placeholder="https://script.google.com/macros/s/...">
+                <button onclick="saveWebAppUrl()" style="margin-top: 10px;">Guardar URL</button>
+            </div>
+        </div>
 
-<div class="stats fade-in">
-<div class="stat-card">
-<div class="stat-number" id="totalAdvances">0</div>
-<div>Total de Adelantos</div>
-</div>
-<div class="stat-card">
-<div class="stat-number" id="totalAmount">₲ 0</div>
-<div>Monto Total</div>
-</div>
-<div class="stat-card">
-<div class="stat-number" id="totalEmployees">0</div>
-<div>Empleados</div>
-</div>
-</div>
+        <div class="stats fade-in">
+            <div class="stat-card">
+                <div class="stat-number" id="totalAdvances">0</div>
+                <div>Total de Adelantos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalAmount">₲ 0</div>
+                <div>Monto Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalEmployees">0</div>
+                <div>Empleados</div>
+            </div>
+        </div>
 
-<div class="main-grid">
-<div class="card fade-in">
-<h2>📝 Registrar Adelanto</h2>
-<form id="advanceForm">
-<div class="form-group">
-<label for="date">Fecha:</label>
-<input type="date" id="date" required>
-</div>
-<div class="form-group">
-<label for="employeeName">Nombre del Empleado:</label>
-<input type="text" id="employeeName" list="employeeNamesList" placeholder="Ej: Juan Pérez" required>
-<datalist id="employeeNamesList"></datalist>
-</div>
-<div class="form-group">
-<label for="amount">Monto (₲):</label>
-<input type="number" id="amount" step="1000" placeholder="Ej: 500000" required>
-</div>
-<div class="form-group">
-<label for="notes">Anotaciones:</label>
-<textarea id="notes" placeholder="Detalles adicionales del adelanto..."></textarea>
-</div>
-<button type="submit" id="submitBtn">Registrar Adelanto</button>
-</form>
-</div>
+        <div class="main-grid">
+            <div class="card fade-in">
+                <h2>📝 Registrar Adelanto</h2>
+                <form id="advanceForm">
+                    <div class="form-group">
+                        <label for="date">Fecha:</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="employeeName">Nombre del Empleado:</label>
+                        <input type="text" id="employeeName" list="employeeNamesList" placeholder="Ej: Juan Pérez" required>
+                        <datalist id="employeeNamesList"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="amount">Monto (₲):</label>
+                        <input type="number" id="amount" step="1000" placeholder="Ej: 500000" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">Anotaciones:</label>
+                        <textarea id="notes" placeholder="Detalles adicionales del adelanto..."></textarea>
+                    </div>
+                    <button type="submit" id="submitBtn">Registrar Adelanto</button>
+                </form>
+            </div>
 
-<div class="card fade-in">
-<h2>📅 Calendario</h2>
-<div class="calendar-header">
-<button class="btn-small" onclick="previousMonth()">◀</button>
-<h3 id="currentMonth"></h3>
-<button class="btn-small" onclick="nextMonth()">▶</button>
-</div>
-<div class="calendar" id="calendar"></div>
-</div>
-</div>
+            <div class="card fade-in">
+                <h2>📅 Calendario</h2>
+                <div class="calendar-header">
+                    <button class="btn-small" onclick="previousMonth()">◀</button>
+                    <h3 id="currentMonth"></h3>
+                    <button class="btn-small" onclick="nextMonth()">▶</button>
+                </div>
+                <div class="calendar" id="calendar"></div>
+            </div>
+        </div>
 
-<div class="card fade-in">
-<h2>📊 Historial de Adelantos</h2>
-<div class="search-box">
-<input type="text" id="searchInput" placeholder="Buscar por nombre o fecha..." onkeyup="filterTable()">
-</div>
-<div class="filter-buttons">
-<button class="filter-btn active" onclick="filterByMonth('all', event)">Todos</button>
-<button class="filter-btn" onclick="filterByMonth('current', event)">Este Mes</button>
-<button class="filter-btn" onclick="filterByMonth('last', event)">Mes Anterior</button>
-</div>
-<div class="button-group">
-<button class="btn-success" onclick="exportToExcel()">📥 Exportar a Excel</button>
-<button class="btn-secondary" onclick="refreshData()">🔄 Actualizar</button>
-<button class="btn-secondary" onclick="openBulkPayment()">💳 Pago Masivo</button>
-<button class="btn-secondary" onclick="changeUser()">👤 Cambiar Usuario</button>
+        <div class="card fade-in">
+            <h2>📊 Historial de Adelantos</h2>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Buscar por nombre o fecha..." onkeyup="filterTable()">
+            </div>
+            <div class="filter-buttons">
+                <button class="filter-btn active" onclick="filterByMonth('all', event)">Todos</button>
+                <button class="filter-btn" onclick="filterByMonth('current', event)">Este Mes</button>
+                <button class="filter-btn" onclick="filterByMonth('last', event)">Mes Anterior</button>
             </div>
             <div class="button-group">
-<button class="btn-secondary" onclick="checkDataIntegrity()" style="background: #ff9800;">🔍 Verificar Datos</button>
-<button class="btn-secondary" onclick="showNameNormalizationDialog()" style="background: #9c27b0;">🔧 Normalizar Nombres</button>
+                <button class="btn-success" onclick="exportToExcel()">📥 Exportar a Excel</button>
+                <button class="btn-secondary" onclick="refreshData()">🔄 Actualizar</button>
+                <button class="btn-secondary" onclick="openBulkPayment()">💳 Pago Masivo</button>
+                <button class="btn-secondary" onclick="changeUser()">👤 Cambiar Usuario</button>
+            </div>
+            <div class="button-group">
+                <button class="btn-secondary" onclick="checkDataIntegrity()" style="background: #ff9800;">🔍 Verificar Datos</button>
+                <button class="btn-secondary" onclick="showNameNormalizationDialog()" style="background: #9c27b0;">🔧 Normalizar Nombres</button>
                 <button class="btn-secondary" onclick="showUpdateOldRecordsDialog()" style="background: #3f51b5;">📋 Actualizar Registros Antiguos</button>
-</div>
-<div id="dateAdvancesInfo"></div>
-<div class="table-container">
-<div id="tableLoading" class="loading">Cargando datos...</div>
-<table id="advancesTable" style="display: none;">
-<thead>
-<tr>
-<th>Fecha</th>
-<th>Empleado</th>
-<th>Monto</th>
-<th>Anotaciones</th>
-<th>Registrado por</th>
+            </div>
+            <div id="dateAdvancesInfo"></div>
+            <div class="table-container">
+                <div id="tableLoading" class="loading">Cargando datos...</div>
+                <table id="advancesTable" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Empleado</th>
+                            <th>Monto</th>
+                            <th>Anotaciones</th>
+                            <th>Registrado por</th>
                             <th>Última modificación</th>
-<th>Acciones</th>
-</tr>
-</thead>
-<tbody id="advancesBody">
-</tbody>
-</table>
-</div>
-</div>
-
-
-</div>
-
-<div id="loginModal" class="modal" style="display: flex;">
-<div class="modal-content" style="max-width: 400px;">
-<h2>👤 Identificación de Usuario</h2>
-<p style="color: #666; margin-bottom: 20px;">Por favor ingrese su nombre para registrar las acciones</p>
-<form id="loginForm" onsubmit="saveUser(event)">
-<div class="form-group">
-<label for="userName">Su nombre:</label>
-<input type="text" id="userName" placeholder="Ej: Juan Administrador" required>
-</div>
-<button type="submit" style="width: 100%;">Ingresar al Sistema</button>
-</form>
-</div>
-</div>
-
-<div id="editModal" class="modal">
-<div class="modal-content">
-<span class="close" onclick="closeModal()">&times;</span>
-<h2>Editar Adelanto</h2>
-<form id="editForm">
-<input type="hidden" id="editId">
-<div class="form-group">
-<label for="editDate">Fecha:</label>
-<input type="date" id="editDate" required>
-</div>
-<div class="form-group">
-<label for="editEmployeeName">Nombre del Empleado:</label>
-<input type="text" id="editEmployeeName" required>
-</div>
-<div class="form-group">
-<label for="editAmount">Monto (₲):</label>
-<input type="number" id="editAmount" step="1000" required>
-</div>
-<div class="form-group">
-<label for="editNotes">Anotaciones:</label>
-<textarea id="editNotes"></textarea>
-</div>
-<button type="submit">Guardar Cambios</button>
-</form>
-</div>
-</div>
-
-<div id="bulkModal" class="modal">
-<div class="modal-content" style="max-width: 800px;">
-<span class="close" onclick="closeBulkModal()">&times;</span>
-<h2>💳 Pago Masivo de Adelantos</h2>
-<p style="color: #666; margin-bottom: 20px;">Agregue múltiples adelantos de una vez. Ideal para pagos mensuales del día 20.</p>
-
-<div class="form-group">
-<label for="bulkDate">Fecha para todos los pagos:</label>
-<input type="date" id="bulkDate" required>
-</div>
-
-<div class="form-group">
-<label for="bulkAmount">Monto estándar (₲):</label>
-<input type="number" id="bulkAmount" value="700000" step="1000">
-</div>
-
-<div class="form-group">
-<label>Empleados:</label>
-<div id="employeesList" style="max-height: 300px; overflow-y: auto; border: 1px solid #e0e0e0; padding: 10px; border-radius: 8px;">
-<!-- Se llenará dinámicamente -->
-</div>
-</div>
-
-<div class="button-group">
-<button onclick="selectAllEmployees()">✅ Seleccionar Todos</button>
-<button onclick="deselectAllEmployees()">❌ Deseleccionar Todos</button>
-<button onclick="addNewEmployeeLine()">➕ Agregar Empleado</button>
-</div>
-
-<div id="customEmployees" style="margin-top: 20px;">
-<!-- Aquí se agregarán líneas personalizadas -->
-</div>
-
-<div style="margin-top: 20px;">
-<button class="btn-success" onclick="processBulkPayment()" style="width: 100%;">
-Procesar Pago Masivo
-</button>
-</div>
-</div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script>
-// Variables globales
-let WEB_APP_URL = localStorage.getItem('webAppUrl') || '';
-let advances = [];
-let currentDate = new Date();
-let currentFilter = 'all';
-let editingId = null;
-let currentUser = localStorage.getItem('currentUser') || '';
-
-// Inicializar
-document.addEventListener('DOMContentLoaded', function() {
-// Verificar si hay usuario guardado
-if (!currentUser) {
-document.getElementById('loginModal').style.display = 'flex';
-} else {
-document.getElementById('currentUser').textContent = currentUser;
-document.getElementById('loginModal').style.display = 'none';
-}
-
-checkSetup();
-initializeForm();
-
-if (WEB_APP_URL && currentUser) {
-loadData();
-}
-});
-
-// Guardar usuario
-function saveUser(event) {
-event.preventDefault();
-const userName = document.getElementById('userName').value.trim();
-if (userName) {
-currentUser = userName;
-localStorage.setItem('currentUser', userName);
-document.getElementById('currentUser').textContent = userName;
-document.getElementById('loginModal').style.display = 'none';
-
-if (WEB_APP_URL) {
-loadData();
-}
-}
-}
-
-// Cambiar usuario
-function changeUser() {
-document.getElementById('loginModal').style.display = 'flex';
-}
-
-// Verificar configuración
-function checkSetup() {
-if (!WEB_APP_URL) {
-document.getElementById('setupNotice').style.display = 'block';
-updateSyncStatus('error', 'No configurado');
-} else {
-document.getElementById('setupNotice').style.display = 'none';
-}
-}
-
-// Guardar URL de Web App
-function saveWebAppUrl() {
-const url = document.getElementById('webAppUrl').value.trim();
-if (url) {
-WEB_APP_URL = url;
-localStorage.setItem('webAppUrl', url);
-checkSetup();
-location.reload();
-}
-}
-
-// Actualizar estado de sincronización
-function updateSyncStatus(status, text) {
-const statusEl = document.getElementById('syncStatus');
-const textEl = document.getElementById('syncText');
-const spinnerEl = document.getElementById('syncSpinner');
-
-statusEl.className = 'sync-status ' + status;
-textEl.textContent = text;
-
-if (status === 'syncing') {
-spinnerEl.style.display = 'block';
-} else {
-spinnerEl.style.display = 'none';
-}
-}
-
-// Cargar datos desde Google Sheets
-async function loadData() {
-if (!WEB_APP_URL) return;
-
-updateSyncStatus('syncing', 'Cargando...');
-
-try {
-// Intentar cargar desde Google Sheets
-const response = await fetch(WEB_APP_URL + '?action=read', {
-method: 'GET',
-mode: 'cors', // Intentar con CORS primero
-});
-
-if (response.ok) {
-const result = await response.json();
-
-if (result.status === 'success') {
-// Limpiar array antes de cargar nuevos datos
-advances = [];
-
-// Procesar y validar cada registro
-const seenIds = new Set();
-result.data.forEach(item => {
-// Evitar duplicados por ID
-if (item.id && !seenIds.has(item.id)) {
-seenIds.add(item.id);
-
-// Limpiar formato de fecha si viene con hora
-if (item.date && typeof item.date === 'string' && item.date.includes('T')) {
-item.date = item.date.split('T')[0];
-}
-
-// Validar que el monto sea un número válido
-if (item.amount && !isNaN(parseInt(item.amount))) {
-item.amount = parseInt(item.amount);
-advances.push(item);
-}
-}
-});
-
-renderAll();
-updateSyncStatus('success', 'Sincronizado');
-setTimeout(() => updateSyncStatus('', '✓ En línea'), 2000);
-
-// Guardar backup local
-localStorage.setItem('advances_backup', JSON.stringify(advances));
-
-console.log(`Cargados ${advances.length} adelantos únicos`);
-}
-}
-} catch (error) {
-console.error('Error al cargar:', error);
-updateSyncStatus('error', 'Modo Offline');
-
-// Cargar datos locales como respaldo
-const localData = localStorage.getItem('advances_backup');
-if (localData) {
-advances = JSON.parse(localData);
-renderAll();
-showNotification('Trabajando con datos locales');
-} else {
-// Si no hay datos locales, inicializar con array vacío
-advances = [];
-renderAll();
-}
-}
-
-document.getElementById('tableLoading').style.display = 'none';
-document.getElementById('advancesTable').style.display = 'table';
-}
-
-// Guardar en Google Sheets
-async function saveToSheets(action, data) {
-if (!WEB_APP_URL) return false;
-
-updateSyncStatus('syncing', 'Guardando...');
-
-try {
-const response = await fetch(WEB_APP_URL, {
-method: 'POST',
-mode: 'no-cors', // Evitar problemas de CORS
-headers: {
-'Content-Type': 'text/plain',
-},
-body: JSON.stringify({ action, ...data })
-});
-
-// Con no-cors no podemos leer la respuesta, así que asumimos éxito
-updateSyncStatus('success', 'Guardado');
-setTimeout(() => updateSyncStatus('', '✓ En línea'), 2000);
-
-// Guardar backup local
-localStorage.setItem('advances_backup', JSON.stringify(advances));
-
-// Para crear, generar ID local
-if (action === 'create') {
-return { status: 'success', id: Date.now() };
-}
-
-return { status: 'success' };
-
-} catch (error) {
-console.error('Error:', error);
-updateSyncStatus('error', 'Error al guardar - Modo offline');
-
-// Guardar localmente como fallback
-localStorage.setItem('advances_backup', JSON.stringify(advances));
-
-if (action === 'create') {
-return { status: 'success', id: Date.now() };
-}
-
-return { status: 'success' };
-}
-}
-
-// Inicializar formulario
-function initializeForm() {
-const dateInput = document.getElementById('date');
-dateInput.value = new Date().toISOString().split('T')[0];
-
-document.getElementById('advanceForm').addEventListener('submit', async function(e) {
-e.preventDefault();
-await addAdvance();
-});
-
-document.getElementById('editForm').addEventListener('submit', async function(e) {
-e.preventDefault();
-await updateAdvance();
-});
-
-// Agregar validación en tiempo real para nombres de empleados
-const employeeNameInput = document.getElementById('employeeName');
-employeeNameInput.addEventListener('blur', function() {
-checkSimilarNames(this.value);
-});
-}
-
-// Verificar nombres similares
-function checkSimilarNames(inputName) {
-if (!inputName.trim()) return;
-
-const normalizedInput = normalizeEmployeeName(inputName);
-const existingEmployees = [...new Set(advances.map(a => a.employeeName))];
-
-// Buscar si ya existe un empleado con el mismo nombre normalizado
-const similarNames = existingEmployees.filter(existing => 
-normalizeEmployeeName(existing) === normalizedInput && 
-existing !== inputName
-);
-
-// Remover advertencia previa si existe
-const existingWarning = document.querySelector('.name-warning');
-if (existingWarning) {
-existingWarning.remove();
-}
-
-if (similarNames.length > 0) {
-const warning = document.createElement('div');
-warning.className = 'name-warning';
-warning.innerHTML = `
-                   ⚠️ Nombre similar detectado: "${similarNames[0]}"<br>
-                   <small>Considere usar el mismo formato para mantener consistencia</small>
-               `;
-document.getElementById('employeeName').parentElement.appendChild(warning);
-}
-}
-
-// Agregar adelanto
-async function addAdvance() {
-const submitBtn = document.getElementById('submitBtn');
-submitBtn.disabled = true;
-
-const advance = {
-date: document.getElementById('date').value,
-employeeName: document.getElementById('employeeName').value,
-amount: parseInt(document.getElementById('amount').value),
-notes: document.getElementById('notes').value,
-registeredBy: currentUser, // Agregar usuario que registra
-registeredAt: new Date().toISOString() // Agregar timestamp
-};
-
-const result = await saveToSheets('create', advance);
-
-if (result && result.id) {
-// Recargar datos desde Google Sheets en lugar de agregar localmente
-// Esto evita duplicados
-await loadData();
-
-document.getElementById('advanceForm').reset();
-document.getElementById('date').value = new Date().toISOString().split('T')[0];
-
-showNotification(`Adelanto registrado por ${currentUser}`);
-}
-
-submitBtn.disabled = false;
-}
-
-// Actualizar adelanto
-async function updateAdvance() {
-const advance = {
-id: editingId,
-date: document.getElementById('editDate').value,
-employeeName: document.getElementById('editEmployeeName').value,
-amount: parseInt(document.getElementById('editAmount').value),
-notes: document.getElementById('editNotes').value,
-modifiedBy: currentUser,
-modifiedAt: new Date().toISOString()
-};
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="advancesBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+    </div>
+
+    <div id="loginModal" class="modal" style="display: flex;">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2>👤 Identificación de Usuario</h2>
+            <p style="color: #666; margin-bottom: 20px;">Por favor ingrese su nombre para registrar las acciones</p>
+            <form id="loginForm" onsubmit="saveUser(event)">
+                <div class="form-group">
+                    <label for="userName">Su nombre:</label>
+                    <input type="text" id="userName" placeholder="Ej: Juan Administrador" required>
+                </div>
+                <button type="submit" style="width: 100%;">Ingresar al Sistema</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Editar Adelanto</h2>
+            <form id="editForm">
+                <input type="hidden" id="editId">
+                <div class="form-group">
+                    <label for="editDate">Fecha:</label>
+                    <input type="date" id="editDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="editEmployeeName">Nombre del Empleado:</label>
+                    <input type="text" id="editEmployeeName" required>
+                </div>
+                <div class="form-group">
+                    <label for="editAmount">Monto (₲):</label>
+                    <input type="number" id="editAmount" step="1000" required>
+                </div>
+                <div class="form-group">
+                    <label for="editNotes">Anotaciones:</label>
+                    <textarea id="editNotes"></textarea>
+                </div>
+                <button type="submit">Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="bulkModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close" onclick="closeBulkModal()">&times;</span>
+            <h2>💳 Pago Masivo de Adelantos</h2>
+            <p style="color: #666; margin-bottom: 20px;">Agregue múltiples adelantos de una vez. Ideal para pagos mensuales del día 20.</p>
+            
+            <div class="form-group">
+                <label for="bulkDate">Fecha para todos los pagos:</label>
+                <input type="date" id="bulkDate" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="bulkAmount">Monto estándar (₲):</label>
+                <input type="number" id="bulkAmount" value="700000" step="1000">
+            </div>
+            
+            <div class="form-group">
+                <label>Empleados:</label>
+                <div id="employeesList" style="max-height: 300px; overflow-y: auto; border: 1px solid #e0e0e0; padding: 10px; border-radius: 8px;">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button onclick="selectAllEmployees()">✅ Seleccionar Todos</button>
+                <button onclick="deselectAllEmployees()">❌ Deseleccionar Todos</button>
+                <button onclick="addNewEmployeeLine()">➕ Agregar Empleado</button>
+            </div>
+            
+            <div id="customEmployees" style="margin-top: 20px;">
+                <!-- Aquí se agregarán líneas personalizadas -->
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button class="btn-success" onclick="processBulkPayment()" style="width: 100%;">
+                    Procesar Pago Masivo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        // Variables globales
+        let WEB_APP_URL = localStorage.getItem('webAppUrl') || '';
+        let advances = [];
+        let currentDate = new Date();
+        let currentFilter = 'all';
+        let editingId = null;
+        let currentUser = localStorage.getItem('currentUser') || '';
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar si hay usuario guardado
+            if (!currentUser) {
+                document.getElementById('loginModal').style.display = 'flex';
+            } else {
+                document.getElementById('currentUser').textContent = currentUser;
+                document.getElementById('loginModal').style.display = 'none';
+            }
+            
+            checkSetup();
+            initializeForm();
+            
+            if (WEB_APP_URL && currentUser) {
+                loadData();
+            }
+        });
+
+        // Guardar usuario
+        function saveUser(event) {
+            event.preventDefault();
+            const userName = document.getElementById('userName').value.trim();
+            if (userName) {
+                currentUser = userName;
+                localStorage.setItem('currentUser', userName);
+                document.getElementById('currentUser').textContent = userName;
+                document.getElementById('loginModal').style.display = 'none';
+                
+                if (WEB_APP_URL) {
+                    loadData();
+                }
+            }
+        }
+
+        // Cambiar usuario
+        function changeUser() {
+            document.getElementById('loginModal').style.display = 'flex';
+        }
+
+        // Verificar configuración
+        function checkSetup() {
+            if (!WEB_APP_URL) {
+                document.getElementById('setupNotice').style.display = 'block';
+                updateSyncStatus('error', 'No configurado');
+            } else {
+                document.getElementById('setupNotice').style.display = 'none';
+            }
+        }
+
+        // Guardar URL de Web App
+        function saveWebAppUrl() {
+            const url = document.getElementById('webAppUrl').value.trim();
+            if (url) {
+                WEB_APP_URL = url;
+                localStorage.setItem('webAppUrl', url);
+                checkSetup();
+                location.reload();
+            }
+        }
+
+        // Actualizar estado de sincronización
+        function updateSyncStatus(status, text) {
+            const statusEl = document.getElementById('syncStatus');
+            const textEl = document.getElementById('syncText');
+            const spinnerEl = document.getElementById('syncSpinner');
+            
+            statusEl.className = 'sync-status ' + status;
+            textEl.textContent = text;
+            
+            if (status === 'syncing') {
+                spinnerEl.style.display = 'block';
+            } else {
+                spinnerEl.style.display = 'none';
+            }
+        }
+
+        // Cargar datos desde Google Sheets
+        async function loadData() {
+            if (!WEB_APP_URL) return;
+            
+            updateSyncStatus('syncing', 'Cargando...');
+            
+            try {
+                // Intentar cargar desde Google Sheets
+                const response = await fetch(WEB_APP_URL + '?action=read', {
+                    method: 'GET',
+                    mode: 'cors', // Intentar con CORS primero
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        // Limpiar array antes de cargar nuevos datos
+                        advances = [];
+                        
+                        // Procesar y validar cada registro
+                        const seenIds = new Set();
+                        result.data.forEach(item => {
+                            // Evitar duplicados por ID
+                            if (item.id && !seenIds.has(item.id)) {
+                                seenIds.add(item.id);
+                                
+                                // Limpiar formato de fecha si viene con hora
+                                if (item.date && typeof item.date === 'string' && item.date.includes('T')) {
+                                    item.date = item.date.split('T')[0];
+                                }
+                                
+                                // Validar que el monto sea un número válido
+                                if (item.amount && !isNaN(parseInt(item.amount))) {
+                                    item.amount = parseInt(item.amount);
+                                    advances.push(item);
+                                }
+                            }
+                        });
+                        
+                        renderAll();
+                        updateSyncStatus('success', 'Sincronizado');
+                        setTimeout(() => updateSyncStatus('', '✓ En línea'), 2000);
+                        
+                        // Guardar backup local
+                        localStorage.setItem('advances_backup', JSON.stringify(advances));
+                        
+                        console.log(`Cargados ${advances.length} adelantos únicos`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error al cargar:', error);
+                updateSyncStatus('error', 'Modo Offline');
+                
+                // Cargar datos locales como respaldo
+                const localData = localStorage.getItem('advances_backup');
+                if (localData) {
+                    advances = JSON.parse(localData);
+                    renderAll();
+                    showNotification('Trabajando con datos locales');
+                } else {
+                    // Si no hay datos locales, inicializar con array vacío
+                    advances = [];
+                    renderAll();
+                }
+            }
+            
+            document.getElementById('tableLoading').style.display = 'none';
+            document.getElementById('advancesTable').style.display = 'table';
+        }
+
+        // Guardar en Google Sheets
+        async function saveToSheets(action, data) {
+            if (!WEB_APP_URL) return false;
+            
+            updateSyncStatus('syncing', 'Guardando...');
+            
+            try {
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Evitar problemas de CORS
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify({ action, ...data })
+                });
+                
+                // Con no-cors no podemos leer la respuesta, así que asumimos éxito
+                updateSyncStatus('success', 'Guardado');
+                setTimeout(() => updateSyncStatus('', '✓ En línea'), 2000);
+                
+                // Guardar backup local
+                localStorage.setItem('advances_backup', JSON.stringify(advances));
+                
+                // Para crear, generar ID local
+                if (action === 'create') {
+                    return { status: 'success', id: Date.now() };
+                }
+                
+                return { status: 'success' };
+                
+            } catch (error) {
+                console.error('Error:', error);
+                updateSyncStatus('error', 'Error al guardar - Modo offline');
+                
+                // Guardar localmente como fallback
+                localStorage.setItem('advances_backup', JSON.stringify(advances));
+                
+                if (action === 'create') {
+                    return { status: 'success', id: Date.now() };
+                }
+                
+                return { status: 'success' };
+            }
+        }
+
+        // Inicializar formulario
+        function initializeForm() {
+            const dateInput = document.getElementById('date');
+            dateInput.value = new Date().toISOString().split('T')[0];
+
+            document.getElementById('advanceForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await addAdvance();
+            });
+
+            document.getElementById('editForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await updateAdvance();
+            });
+            
+            // Agregar validación en tiempo real para nombres de empleados
+            const employeeNameInput = document.getElementById('employeeName');
+            employeeNameInput.addEventListener('blur', function() {
+                checkSimilarNames(this.value);
+            });
+        }
+
+        // Verificar nombres similares
+        function checkSimilarNames(inputName) {
+            if (!inputName.trim()) return;
+            
+            const normalizedInput = normalizeEmployeeName(inputName);
+            const existingEmployees = [...new Set(advances.map(a => a.employeeName))];
+            
+            // Buscar si ya existe un empleado con el mismo nombre normalizado
+            const similarNames = existingEmployees.filter(existing => 
+                normalizeEmployeeName(existing) === normalizedInput && 
+                existing !== inputName
+            );
+            
+            // Remover advertencia previa si existe
+            const existingWarning = document.querySelector('.name-warning');
+            if (existingWarning) {
+                existingWarning.remove();
+            }
+            
+            if (similarNames.length > 0) {
+                const warning = document.createElement('div');
+                warning.className = 'name-warning';
+                warning.innerHTML = `
+                    ⚠️ Nombre similar detectado: "${similarNames[0]}"<br>
+                    <small>Considere usar el mismo formato para mantener consistencia</small>
+                `;
+                document.getElementById('employeeName').parentElement.appendChild(warning);
+            }
+        }
+
+        // Agregar adelanto
+        async function addAdvance() {
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            
+            const advance = {
+                date: document.getElementById('date').value,
+                employeeName: document.getElementById('employeeName').value,
+                amount: parseInt(document.getElementById('amount').value),
+                notes: document.getElementById('notes').value,
+                registeredBy: currentUser, // Agregar usuario que registra
+                registeredAt: new Date().toISOString() // Agregar timestamp
+            };
+
+            const result = await saveToSheets('create', advance);
+            
+            if (result && result.id) {
+                // Recargar datos desde Google Sheets en lugar de agregar localmente
+                // Esto evita duplicados
+                await loadData();
+                
+                document.getElementById('advanceForm').reset();
+                document.getElementById('date').value = new Date().toISOString().split('T')[0];
+                
+                showNotification(`Adelanto registrado por ${currentUser}`);
+            }
+            
+            submitBtn.disabled = false;
+        }
+
+        // Actualizar adelanto
+        async function updateAdvance() {
+            const advance = {
+                id: editingId,
+                date: document.getElementById('editDate').value,
+                employeeName: document.getElementById('editEmployeeName').value,
+                amount: parseInt(document.getElementById('editAmount').value),
+                notes: document.getElementById('editNotes').value,
+                modifiedBy: currentUser,
+                modifiedAt: new Date().toISOString()
+            };
 
             // Mantener información original
             const originalAdvance = advances.find(a => a.id === editingId);
@@ -1010,85 +1007,83 @@ modifiedAt: new Date().toISOString()
                 advance.registeredAt = originalAdvance.registeredAt;
             }
 
-const result = await saveToSheets('update', advance);
-
-if (result) {
-// Recargar datos desde Google Sheets en lugar de actualizar localmente
-await loadData();
-closeModal();
-                showNotification('Adelanto actualizado');
+            const result = await saveToSheets('update', advance);
+            
+            if (result) {
+                // Recargar datos desde Google Sheets en lugar de actualizar localmente
+                await loadData();
+                closeModal();
                 showNotification(`Adelanto actualizado por ${currentUser}`);
-}
-}
+            }
+        }
 
-// Eliminar adelanto
-async function deleteAdvance(id) {
-if (!confirm('¿Está seguro de eliminar este adelanto?')) return;
+        // Eliminar adelanto
+        async function deleteAdvance(id) {
+            if (!confirm('¿Está seguro de eliminar este adelanto?')) return;
+            
+            const result = await saveToSheets('delete', { id });
+            
+            if (result) {
+                // Recargar datos desde Google Sheets en lugar de eliminar localmente
+                await loadData();
+                showNotification('Adelanto eliminado');
+            }
+        }
 
-const result = await saveToSheets('delete', { id });
+        // Renderizar todo
+        function renderAll() {
+            renderTable();
+            updateCalendar();
+            updateStats();
+            updateEmployeesList();
+        }
 
-if (result) {
-// Recargar datos desde Google Sheets en lugar de eliminar localmente
-await loadData();
-showNotification('Adelanto eliminado');
-}
-}
+        // Actualizar lista de empleados para autocompletado
+        function updateEmployeesList() {
+            const datalist = document.getElementById('employeeNamesList');
+            datalist.innerHTML = '';
+            
+            // Obtener nombres únicos de empleados
+            const employeeNames = [...new Set(advances.map(a => a.employeeName))].sort();
+            
+            employeeNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                datalist.appendChild(option);
+            });
+        }
 
-// Renderizar todo
-function renderAll() {
-renderTable();
-updateCalendar();
-updateStats();
-updateEmployeesList();
-}
+        // Renderizar tabla
+        function renderTable() {
+            const tbody = document.getElementById('advancesBody');
+            tbody.innerHTML = '';
 
-// Actualizar lista de empleados para autocompletado
-function updateEmployeesList() {
-const datalist = document.getElementById('employeeNamesList');
-datalist.innerHTML = '';
+            let filteredAdvances = advances;
 
-// Obtener nombres únicos de empleados
-const employeeNames = [...new Set(advances.map(a => a.employeeName))].sort();
+            if (currentFilter === 'current') {
+                const month = currentDate.getMonth();
+                const year = currentDate.getFullYear();
+                filteredAdvances = advances.filter(a => {
+                    const d = new Date(a.date);
+                    return d.getMonth() === month && d.getFullYear() === year;
+                });
+            } else if (currentFilter === 'last') {
+                const lastMonth = new Date(currentDate);
+                lastMonth.setMonth(lastMonth.getMonth() - 1);
+                filteredAdvances = advances.filter(a => {
+                    const d = new Date(a.date);
+                    return d.getMonth() === lastMonth.getMonth() && 
+                           d.getFullYear() === lastMonth.getFullYear();
+                });
+            }
 
-employeeNames.forEach(name => {
-const option = document.createElement('option');
-option.value = name;
-datalist.appendChild(option);
-});
-}
+            filteredAdvances.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-// Renderizar tabla
-function renderTable() {
-const tbody = document.getElementById('advancesBody');
-tbody.innerHTML = '';
-
-let filteredAdvances = advances;
-
-if (currentFilter === 'current') {
-const month = currentDate.getMonth();
-const year = currentDate.getFullYear();
-filteredAdvances = advances.filter(a => {
-const d = new Date(a.date);
-return d.getMonth() === month && d.getFullYear() === year;
-});
-} else if (currentFilter === 'last') {
-const lastMonth = new Date(currentDate);
-lastMonth.setMonth(lastMonth.getMonth() - 1);
-filteredAdvances = advances.filter(a => {
-const d = new Date(a.date);
-return d.getMonth() === lastMonth.getMonth() && 
-d.getFullYear() === lastMonth.getFullYear();
-});
-}
-
-filteredAdvances.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-filteredAdvances.forEach(advance => {
-const row = tbody.insertRow();
+            filteredAdvances.forEach(advance => {
+                const row = tbody.insertRow();
                 
                 // Información de registro original
-const registeredBy = advance.registeredBy || 'Sistema anterior';
-                const registeredAt = advance.registeredAt ? new Date(advance.registeredAt).toLocaleDateString('es-ES') : '';
+                const registeredBy = advance.registeredBy || 'Sistema anterior';
                 const registeredAt = advance.registeredAt ? formatDateTime(advance.registeredAt) : '';
                 
                 // Información de última modificación
@@ -1099,134 +1094,134 @@ const registeredBy = advance.registeredBy || 'Sistema anterior';
                         ${formatDateTime(advance.modifiedAt)}
                     </small>`;
                 }
-
-row.innerHTML = `
-                   <td>${formatDate(advance.date)}</td>
-                   <td>${advance.employeeName}</td>
-                   <td>₲ ${advance.amount.toLocaleString('es-PY')}</td>
-                   <td>${advance.notes || '-'}</td>
-                   <td>
-                       <small style="color: #666;">
-                           ${registeredBy}
-                           ${registeredAt ? '<br>' + registeredAt : ''}
-                       </small>
-                   </td>
+                
+                row.innerHTML = `
+                    <td>${formatDate(advance.date)}</td>
+                    <td>${advance.employeeName}</td>
+                    <td>₲ ${advance.amount.toLocaleString('es-PY')}</td>
+                    <td>${advance.notes || '-'}</td>
+                    <td>
+                        <small style="color: #666;">
+                            ${registeredBy}
+                            ${registeredAt ? '<br>' + registeredAt : ''}
+                        </small>
+                    </td>
                     <td>${lastModifiedInfo}</td>
-                   <td class="actions">
-                       <button class="btn-small btn-secondary" onclick="editAdvance(${advance.id})">✏️</button>
-                       <button class="btn-small btn-danger" onclick="deleteAdvance(${advance.id})">🗑️</button>
-                   </td>
-               `;
-});
-}
+                    <td class="actions">
+                        <button class="btn-small btn-secondary" onclick="editAdvance(${advance.id})">✏️</button>
+                        <button class="btn-small btn-danger" onclick="deleteAdvance(${advance.id})">🗑️</button>
+                    </td>
+                `;
+            });
+        }
 
-// Actualizar calendario
-function updateCalendar() {
-const calendar = document.getElementById('calendar');
-const monthYear = document.getElementById('currentMonth');
+        // Actualizar calendario
+        function updateCalendar() {
+            const calendar = document.getElementById('calendar');
+            const monthYear = document.getElementById('currentMonth');
+            
+            calendar.innerHTML = '';
+            
+            const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            days.forEach(day => {
+                const dayLabel = document.createElement('div');
+                dayLabel.className = 'day-label';
+                dayLabel.textContent = day;
+                calendar.appendChild(dayLabel);
+            });
+            
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            monthYear.textContent = new Date(year, month).toLocaleDateString('es-ES', { 
+                month: 'long', 
+                year: 'numeric' 
+            });
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'calendar-day other-month';
+                calendar.appendChild(emptyDay);
+            }
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day';
+                dayElement.textContent = day;
+                
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                const hasAdvance = advances.some(a => a.date === dateStr);
+                if (hasAdvance) {
+                    dayElement.classList.add('has-advance');
+                }
+                
+                const today = new Date();
+                if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
+                    dayElement.classList.add('selected');
+                }
+                
+                dayElement.addEventListener('click', () => showAdvancesForDate(dateStr));
+                calendar.appendChild(dayElement);
+            }
+        }
 
-calendar.innerHTML = '';
+        // Función para normalizar nombres
+        function normalizeEmployeeName(name) {
+            if (!name) return '';
+            return name
+                .toLowerCase() // Convertir a minúsculas
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Eliminar tildes
+                .replace(/\s+/g, ' ') // Reemplazar múltiples espacios por uno
+                .trim(); // Eliminar espacios al inicio y final
+        }
 
-const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-days.forEach(day => {
-const dayLabel = document.createElement('div');
-dayLabel.className = 'day-label';
-dayLabel.textContent = day;
-calendar.appendChild(dayLabel);
-});
+        // Actualizar estadísticas
+        function updateStats() {
+            // Filtrar solo adelantos válidos con montos numéricos
+            const validAdvances = advances.filter(a => a.amount && !isNaN(a.amount));
+            
+            const totalAdvances = validAdvances.length;
+            const totalAmount = validAdvances.reduce((sum, a) => {
+                const amount = parseInt(a.amount) || 0;
+                return sum + amount;
+            }, 0);
+            
+            // Contar empleados únicos usando nombres normalizados
+            const normalizedEmployees = new Set(
+                validAdvances.map(a => normalizeEmployeeName(a.employeeName))
+            );
+            const uniqueEmployees = normalizedEmployees.size;
+            
+            document.getElementById('totalAdvances').textContent = totalAdvances;
+            document.getElementById('totalAmount').textContent = `₲ ${totalAmount.toLocaleString('es-PY')}`;
+            document.getElementById('totalEmployees').textContent = uniqueEmployees;
+            
+            // Log para depuración
+            console.log('Estadísticas actualizadas:', {
+                totalRegistros: advances.length,
+                registrosValidos: validAdvances.length,
+                montoTotal: totalAmount,
+                empleadosUnicos: uniqueEmployees,
+                empleadosNormalizados: Array.from(normalizedEmployees)
+            });
+        }
 
-const year = currentDate.getFullYear();
-const month = currentDate.getMonth();
-
-monthYear.textContent = new Date(year, month).toLocaleDateString('es-ES', { 
-month: 'long', 
-year: 'numeric' 
-});
-
-const firstDay = new Date(year, month, 1).getDay();
-const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-for (let i = 0; i < firstDay; i++) {
-const emptyDay = document.createElement('div');
-emptyDay.className = 'calendar-day other-month';
-calendar.appendChild(emptyDay);
-}
-
-for (let day = 1; day <= daysInMonth; day++) {
-const dayElement = document.createElement('div');
-dayElement.className = 'calendar-day';
-dayElement.textContent = day;
-
-const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-
-const hasAdvance = advances.some(a => a.date === dateStr);
-if (hasAdvance) {
-dayElement.classList.add('has-advance');
-}
-
-const today = new Date();
-if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
-dayElement.classList.add('selected');
-}
-
-dayElement.addEventListener('click', () => showAdvancesForDate(dateStr));
-calendar.appendChild(dayElement);
-}
-}
-
-// Función para normalizar nombres
-function normalizeEmployeeName(name) {
-if (!name) return '';
-return name
-.toLowerCase() // Convertir a minúsculas
-.normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Eliminar tildes
-.replace(/\s+/g, ' ') // Reemplazar múltiples espacios por uno
-.trim(); // Eliminar espacios al inicio y final
-}
-
-// Actualizar estadísticas
-function updateStats() {
-// Filtrar solo adelantos válidos con montos numéricos
-const validAdvances = advances.filter(a => a.amount && !isNaN(a.amount));
-
-const totalAdvances = validAdvances.length;
-const totalAmount = validAdvances.reduce((sum, a) => {
-const amount = parseInt(a.amount) || 0;
-return sum + amount;
-}, 0);
-
-// Contar empleados únicos usando nombres normalizados
-const normalizedEmployees = new Set(
-validAdvances.map(a => normalizeEmployeeName(a.employeeName))
-);
-const uniqueEmployees = normalizedEmployees.size;
-
-document.getElementById('totalAdvances').textContent = totalAdvances;
-document.getElementById('totalAmount').textContent = `₲ ${totalAmount.toLocaleString('es-PY')}`;
-document.getElementById('totalEmployees').textContent = uniqueEmployees;
-
-// Log para depuración
-console.log('Estadísticas actualizadas:', {
-totalRegistros: advances.length,
-registrosValidos: validAdvances.length,
-montoTotal: totalAmount,
-empleadosUnicos: uniqueEmployees,
-empleadosNormalizados: Array.from(normalizedEmployees)
-});
-}
-
-// Mostrar adelantos de fecha
-function showAdvancesForDate(date) {
-const dayAdvances = advances.filter(a => a.date === date);
-const dateInfo = document.getElementById('dateAdvancesInfo');
-
-if (dayAdvances.length > 0) {
-let html = `
-                   <div class="date-advances">
-                       <h3>📅 Adelantos del ${formatDate(date)}</h3>
-               `;
-
-dayAdvances.forEach(a => {
+        // Mostrar adelantos de fecha
+        function showAdvancesForDate(date) {
+            const dayAdvances = advances.filter(a => a.date === date);
+            const dateInfo = document.getElementById('dateAdvancesInfo');
+            
+            if (dayAdvances.length > 0) {
+                let html = `
+                    <div class="date-advances">
+                        <h3>📅 Adelantos del ${formatDate(date)}</h3>
+                `;
+                
+                dayAdvances.forEach(a => {
                     const registeredInfo = a.registeredBy 
                         ? `Registrado por: ${a.registeredBy}` 
                         : 'Sistema anterior';
@@ -1234,72 +1229,71 @@ dayAdvances.forEach(a => {
                         ? `<br>Última modificación: ${a.modifiedBy} (${formatDateTime(a.modifiedAt)})` 
                         : '';
                     
-html += `
-                       <div class="date-advance-item">
-                           <strong>${a.employeeName}</strong><br>
-                           <span style="color: #667eea; font-size: 1.2em;">₲ ${a.amount.toLocaleString('es-PY')}</span><br>
-                            <small style="color: #666;">${a.notes || 'Sin anotaciones'}</small>
+                    html += `
+                        <div class="date-advance-item">
+                            <strong>${a.employeeName}</strong><br>
+                            <span style="color: #667eea; font-size: 1.2em;">₲ ${a.amount.toLocaleString('es-PY')}</span><br>
                             <small style="color: #666;">${a.notes || 'Sin anotaciones'}</small><br>
                             <small style="color: #999; font-style: italic;">
                                 ${registeredInfo}${modifiedInfo}
                             </small>
-                       </div>
-                   `;
-});
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                dateInfo.innerHTML = html;
+                dateInfo.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                dateInfo.innerHTML = '';
+            }
+        }
 
-html += '</div>';
-dateInfo.innerHTML = html;
-dateInfo.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-} else {
-dateInfo.innerHTML = '';
-}
-}
-
-// Funciones auxiliares
-function formatDate(dateString) {
-if (!dateString || dateString === 'Invalid Date') {
-return 'Fecha inválida';
-}
-
-try {
-let dateStr = dateString;
-
-// Si es un objeto Date, convertir a string
-if (dateString instanceof Date) {
-dateStr = dateString.toISOString().split('T')[0];
-}
-
-// Si viene con hora, tomar solo la fecha
-if (typeof dateStr === 'string' && dateStr.includes('T')) {
-dateStr = dateStr.split('T')[0];
-}
-
-// Si está en formato YYYY-MM-DD
-if (typeof dateStr === 'string' && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-const [year, month, day] = dateStr.split('-');
-return `${day}/${month}/${year}`;
-}
-
-// Si está en formato DD/MM/YYYY (ya formateado)
-if (typeof dateStr === 'string' && dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-return dateStr;
-}
-
-// Intentar parsear como fecha
-const date = new Date(dateStr);
-if (!isNaN(date.getTime())) {
-const day = String(date.getDate()).padStart(2, '0');
-const month = String(date.getMonth() + 1).padStart(2, '0');
-const year = date.getFullYear();
-return `${day}/${month}/${year}`;
-}
-
-return 'Fecha inválida';
-} catch (e) {
-console.error('Error formateando fecha:', e);
-return 'Fecha inválida';
-}
-}
+        // Funciones auxiliares
+        function formatDate(dateString) {
+            if (!dateString || dateString === 'Invalid Date') {
+                return 'Fecha inválida';
+            }
+            
+            try {
+                let dateStr = dateString;
+                
+                // Si es un objeto Date, convertir a string
+                if (dateString instanceof Date) {
+                    dateStr = dateString.toISOString().split('T')[0];
+                }
+                
+                // Si viene con hora, tomar solo la fecha
+                if (typeof dateStr === 'string' && dateStr.includes('T')) {
+                    dateStr = dateStr.split('T')[0];
+                }
+                
+                // Si está en formato YYYY-MM-DD
+                if (typeof dateStr === 'string' && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const [year, month, day] = dateStr.split('-');
+                    return `${day}/${month}/${year}`;
+                }
+                
+                // Si está en formato DD/MM/YYYY (ya formateado)
+                if (typeof dateStr === 'string' && dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                    return dateStr;
+                }
+                
+                // Intentar parsear como fecha
+                const date = new Date(dateStr);
+                if (!isNaN(date.getTime())) {
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = date.getFullYear();
+                    return `${day}/${month}/${year}`;
+                }
+                
+                return 'Fecha inválida';
+            } catch (e) {
+                console.error('Error formateando fecha:', e);
+                return 'Fecha inválida';
+            }
+        }
 
         // Formatear fecha y hora
         function formatDateTime(dateTimeString) {
@@ -1321,492 +1315,489 @@ return 'Fecha inválida';
             }
         }
 
-function previousMonth() {
-currentDate.setMonth(currentDate.getMonth() - 1);
-updateCalendar();
-if (currentFilter === 'current') renderTable();
-}
+        function previousMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            updateCalendar();
+            if (currentFilter === 'current') renderTable();
+        }
 
-function nextMonth() {
-currentDate.setMonth(currentDate.getMonth() + 1);
-updateCalendar();
-if (currentFilter === 'current') renderTable();
-}
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            updateCalendar();
+            if (currentFilter === 'current') renderTable();
+        }
 
-function filterByMonth(type, event) {
-currentFilter = type;
-document.querySelectorAll('.filter-btn').forEach(btn => {
-btn.classList.remove('active');
-});
-event.target.classList.add('active');
-renderTable();
-}
+        function filterByMonth(type, event) {
+            currentFilter = type;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            renderTable();
+        }
 
-function filterTable() {
-const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-const rows = document.querySelectorAll('#advancesBody tr');
+        function filterTable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#advancesBody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        }
 
-rows.forEach(row => {
-const text = row.textContent.toLowerCase();
-row.style.display = text.includes(searchTerm) ? '' : 'none';
-});
-}
+        function editAdvance(id) {
+            const advance = advances.find(a => a.id === id);
+            if (advance) {
+                editingId = id;
+                document.getElementById('editDate').value = advance.date;
+                document.getElementById('editEmployeeName').value = advance.employeeName;
+                document.getElementById('editAmount').value = advance.amount;
+                document.getElementById('editNotes').value = advance.notes || '';
+                document.getElementById('editModal').style.display = 'flex';
+            }
+        }
 
-function editAdvance(id) {
-const advance = advances.find(a => a.id === id);
-if (advance) {
-editingId = id;
-document.getElementById('editDate').value = advance.date;
-document.getElementById('editEmployeeName').value = advance.employeeName;
-document.getElementById('editAmount').value = advance.amount;
-document.getElementById('editNotes').value = advance.notes || '';
-document.getElementById('editModal').style.display = 'flex';
-}
-}
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
 
-function closeModal() {
-document.getElementById('editModal').style.display = 'none';
-}
+        function refreshData() {
+            loadData();
+        }
 
-function refreshData() {
-loadData();
-}
-
-function exportToExcel() {
-            const ws_data = [['Fecha', 'Empleado', 'Monto (₲)', 'Anotaciones', 'Registrado por', 'Fecha de registro']];
+        function exportToExcel() {
             const ws_data = [['Fecha', 'Empleado', 'Monto (₲)', 'Anotaciones', 'Registrado por', 'Fecha de registro', 'Modificado por', 'Fecha de modificación']];
-
-advances.forEach(advance => {
-ws_data.push([
-advance.date,
-advance.employeeName,
-advance.amount,
-advance.notes || '',
-advance.registeredBy || 'Sistema anterior',
-                    advance.registeredAt ? new Date(advance.registeredAt).toLocaleDateString('es-ES') : ''
+            
+            advances.forEach(advance => {
+                ws_data.push([
+                    advance.date,
+                    advance.employeeName,
+                    advance.amount,
+                    advance.notes || '',
+                    advance.registeredBy || 'Sistema anterior',
                     advance.registeredAt ? formatDateTime(advance.registeredAt) : '',
                     advance.modifiedBy || '',
                     advance.modifiedAt ? formatDateTime(advance.modifiedAt) : ''
-]);
-});
-
-const ws = XLSX.utils.aoa_to_sheet(ws_data);
-const wb = XLSX.utils.book_new();
-XLSX.utils.book_append_sheet(wb, ws, 'Adelantos');
-
-const filename = `adelantos_sheets_${new Date().toISOString().split('T')[0]}.xlsx`;
-XLSX.writeFile(wb, filename);
-
-            showNotification('Datos exportados a Excel');
+                ]);
+            });
+            
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Adelantos');
+            
+            const filename = `adelantos_sheets_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, filename);
+            
             showNotification('Datos exportados a Excel con información completa de auditoría');
-}
+        }
 
-function showNotification(message) {
-const notification = document.createElement('div');
-notification.style.cssText = `
-               position: fixed;
-               top: 70px;
-               right: 20px;
-               background: #28a745;
-               color: white;
-               padding: 15px 25px;
-               border-radius: 8px;
-               box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-               z-index: 2000;
-               animation: fadeIn 0.3s ease-out;
-           `;
-notification.textContent = message;
-document.body.appendChild(notification);
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 70px;
+                right: 20px;
+                background: #28a745;
+                color: white;
+                padding: 15px 25px;
+                border-radius: 8px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                z-index: 2000;
+                animation: fadeIn 0.3s ease-out;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
 
-setTimeout(() => {
-notification.style.opacity = '0';
-setTimeout(() => notification.remove(), 300);
-}, 3000);
-}
+        window.onclick = function(event) {
+            const modal = document.getElementById('editModal');
+            const bulkModal = document.getElementById('bulkModal');
+            if (event.target === modal) {
+                closeModal();
+            } else if (event.target === bulkModal) {
+                closeBulkModal();
+            }
+        }
 
-window.onclick = function(event) {
-const modal = document.getElementById('editModal');
-const bulkModal = document.getElementById('bulkModal');
-if (event.target === modal) {
-closeModal();
-} else if (event.target === bulkModal) {
-closeBulkModal();
-}
-}
+        // Funciones para pago masivo
+        function openBulkPayment() {
+            // Establecer fecha del 20 del mes actual
+            const today = new Date();
+            const day20 = new Date(today.getFullYear(), today.getMonth(), 20);
+            document.getElementById('bulkDate').value = day20.toISOString().split('T')[0];
+            
+            // Obtener el mes y año actual para calcular adelantos
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+            
+            // Calcular adelantos por empleado en el mes actual (usando nombres normalizados)
+            const employeeAdvances = {};
+            const employeeOriginalNames = {};
+            
+            advances.forEach(adv => {
+                const advDate = new Date(adv.date);
+                if (advDate.getMonth() === currentMonth && advDate.getFullYear() === currentYear) {
+                    const normalizedName = normalizeEmployeeName(adv.employeeName);
+                    if (!employeeAdvances[normalizedName]) {
+                        employeeAdvances[normalizedName] = 0;
+                        employeeOriginalNames[normalizedName] = adv.employeeName;
+                    }
+                    employeeAdvances[normalizedName] += adv.amount;
+                }
+            });
+            
+            // Obtener lista única de empleados (normalizados)
+            const uniqueEmployeesMap = {};
+            advances.forEach(a => {
+                const normalized = normalizeEmployeeName(a.employeeName);
+                if (!uniqueEmployeesMap[normalized]) {
+                    uniqueEmployeesMap[normalized] = a.employeeName; // Guardar la versión más reciente del nombre
+                }
+            });
+            
+            const uniqueEmployees = Object.values(uniqueEmployeesMap).sort();
+            
+            const employeesList = document.getElementById('employeesList');
+            employeesList.innerHTML = '<p style="margin-bottom: 15px; color: #666;">Los montos ya están calculados descontando adelantos del mes:</p>';
+            
+            const baseAmount = parseInt(document.getElementById('bulkAmount').value) || 700000;
+            
+            uniqueEmployees.forEach(emp => {
+                const normalizedName = normalizeEmployeeName(emp);
+                const previousAdvances = employeeAdvances[normalizedName] || 0;
+                const remainingAmount = Math.max(0, baseAmount - previousAdvances);
+                
+                const div = document.createElement('div');
+                div.style.marginBottom = '15px';
+                div.style.padding = '10px';
+                div.style.border = '1px solid #e0e0e0';
+                div.style.borderRadius = '8px';
+                div.style.background = remainingAmount === 0 ? '#ffebee' : '#fff';
+                
+                div.innerHTML = `
+                    <label style="display: block; cursor: pointer;">
+                        <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                            <input type="checkbox" value="${emp}" style="margin-right: 10px;" ${remainingAmount > 0 ? 'checked' : ''}>
+                            <span style="font-weight: bold;">${emp}</span>
+                        </div>
+                        <div style="margin-left: 30px; font-size: 14px; color: #666;">
+                            Adelantos del mes: ₲ ${previousAdvances.toLocaleString('es-PY')}
+                        </div>
+                        <div style="margin-left: 30px; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 14px;">Saldo a pagar:</span>
+                            <input type="number" value="${remainingAmount}" step="1000" 
+                                   style="width: 150px; font-weight: bold; color: ${remainingAmount === 0 ? '#d32f2f' : '#1976d2'};" 
+                                   placeholder="Monto">
+                            <span style="font-size: 12px; color: #888;">(Base: ₲ ${baseAmount.toLocaleString('es-PY')})</span>
+                        </div>
+                    </label>
+                `;
+                
+                employeesList.appendChild(div);
+            });
+            
+            // Agregar resumen
+            const totalAdvances = Object.values(employeeAdvances).reduce((sum, val) => sum + val, 0);
+            const totalEmployees = Object.keys(uniqueEmployeesMap).length;
+            const totalToPay = uniqueEmployees.reduce((sum, emp) => {
+                const normalized = normalizeEmployeeName(emp);
+                const prev = employeeAdvances[normalized] || 0;
+                return sum + Math.max(0, baseAmount - prev);
+            }, 0);
+            
+            const summary = document.createElement('div');
+            summary.style.marginTop = '20px';
+            summary.style.padding = '15px';
+            summary.style.background = '#f5f5f5';
+            summary.style.borderRadius = '8px';
+            summary.innerHTML = `
+                <h4 style="margin-bottom: 10px;">📊 Resumen del Mes</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
+                    <div>Total empleados: <strong>${totalEmployees}</strong></div>
+                    <div>Adelantos ya pagados: <strong>₲ ${totalAdvances.toLocaleString('es-PY')}</strong></div>
+                    <div>Base mensual total: <strong>₲ ${(baseAmount * totalEmployees).toLocaleString('es-PY')}</strong></div>
+                    <div style="color: #1976d2;">Saldo a pagar: <strong>₲ ${totalToPay.toLocaleString('es-PY')}</strong></div>
+                </div>
+            `;
+            employeesList.appendChild(summary);
+            
+            document.getElementById('bulkModal').style.display = 'flex';
+        }
 
-// Funciones para pago masivo
-function openBulkPayment() {
-// Establecer fecha del 20 del mes actual
-const today = new Date();
-const day20 = new Date(today.getFullYear(), today.getMonth(), 20);
-document.getElementById('bulkDate').value = day20.toISOString().split('T')[0];
+        function closeBulkModal() {
+            document.getElementById('bulkModal').style.display = 'none';
+            document.getElementById('customEmployees').innerHTML = '';
+        }
 
-// Obtener el mes y año actual para calcular adelantos
-const currentMonth = today.getMonth();
-const currentYear = today.getFullYear();
+        function selectAllEmployees() {
+            const checkboxes = document.querySelectorAll('#employeesList input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                // Solo seleccionar si el monto es mayor a 0
+                const amountInput = cb.parentElement.parentElement.querySelector('input[type="number"]');
+                if (amountInput && parseInt(amountInput.value) > 0) {
+                    cb.checked = true;
+                }
+            });
+        }
 
-// Calcular adelantos por empleado en el mes actual (usando nombres normalizados)
-const employeeAdvances = {};
-const employeeOriginalNames = {};
+        function deselectAllEmployees() {
+            const checkboxes = document.querySelectorAll('#employeesList input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+        }
 
-advances.forEach(adv => {
-const advDate = new Date(adv.date);
-if (advDate.getMonth() === currentMonth && advDate.getFullYear() === currentYear) {
-const normalizedName = normalizeEmployeeName(adv.employeeName);
-if (!employeeAdvances[normalizedName]) {
-employeeAdvances[normalizedName] = 0;
-employeeOriginalNames[normalizedName] = adv.employeeName;
-}
-employeeAdvances[normalizedName] += adv.amount;
-}
-});
+        function addNewEmployeeLine() {
+            const customEmployees = document.getElementById('customEmployees');
+            const baseAmount = parseInt(document.getElementById('bulkAmount').value) || 700000;
+            
+            const div = document.createElement('div');
+            div.style.marginBottom = '10px';
+            div.innerHTML = `
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" placeholder="Nombre del empleado nuevo" style="flex: 1;">
+                    <input type="number" value="${baseAmount}" step="1000" placeholder="Monto" style="width: 150px;">
+                    <button onclick="this.parentElement.parentElement.remove()" style="padding: 5px 10px;">❌</button>
+                </div>
+            `;
+            customEmployees.appendChild(div);
+        }
 
-// Obtener lista única de empleados (normalizados)
-const uniqueEmployeesMap = {};
-advances.forEach(a => {
-const normalized = normalizeEmployeeName(a.employeeName);
-if (!uniqueEmployeesMap[normalized]) {
-uniqueEmployeesMap[normalized] = a.employeeName; // Guardar la versión más reciente del nombre
-}
-});
+        // Actualizar montos cuando cambia el monto base
+        document.addEventListener('DOMContentLoaded', function() {
+            const bulkAmountInput = document.getElementById('bulkAmount');
+            if (bulkAmountInput) {
+                bulkAmountInput.addEventListener('change', function() {
+                    if (document.getElementById('bulkModal').style.display === 'flex') {
+                        openBulkPayment(); // Recalcular todo
+                    }
+                });
+            }
+        });
 
-const uniqueEmployees = Object.values(uniqueEmployeesMap).sort();
+        async function processBulkPayment() {
+            const bulkDate = document.getElementById('bulkDate').value;
+            
+            if (!bulkDate) {
+                alert('Por favor seleccione una fecha');
+                return;
+            }
+            
+            const advancesToCreate = [];
+            
+            // Obtener empleados seleccionados
+            const employeeRows = document.querySelectorAll('#employeesList > div');
+            employeeRows.forEach(row => {
+                const checkbox = row.querySelector('input[type="checkbox"]');
+                const amountInput = row.querySelector('input[type="number"]');
+                if (checkbox && checkbox.checked && amountInput) {
+                    const amount = parseInt(amountInput.value);
+                    if (amount > 0) {
+                        advancesToCreate.push({
+                            date: bulkDate,
+                            employeeName: checkbox.value,
+                            amount: amount,
+                            notes: 'Pago mensual (adelanto descontado)',
+                            registeredBy: currentUser,
+                            registeredAt: new Date().toISOString()
+                        });
+                    }
+                }
+            });
+            
+            // Obtener empleados personalizados
+            const customRows = document.querySelectorAll('#customEmployees > div');
+            customRows.forEach(row => {
+                const nameInput = row.querySelector('input[type="text"]');
+                const amountInput = row.querySelector('input[type="number"]');
+                if (nameInput && nameInput.value.trim() && amountInput) {
+                    const amount = parseInt(amountInput.value);
+                    if (amount > 0) {
+                        advancesToCreate.push({
+                            date: bulkDate,
+                            employeeName: nameInput.value.trim(),
+                            amount: amount,
+                            notes: 'Pago mensual',
+                            registeredBy: currentUser,
+                            registeredAt: new Date().toISOString()
+                        });
+                    }
+                }
+            });
+            
+            if (advancesToCreate.length === 0) {
+                alert('No hay empleados seleccionados o todos tienen saldo 0');
+                return;
+            }
+            
+            const totalAmount = advancesToCreate.reduce((sum, adv) => sum + adv.amount, 0);
+            
+            if (!confirm(`¿Confirma el pago masivo?\n\nEmpleados: ${advancesToCreate.length}\nTotal a pagar: ₲ ${totalAmount.toLocaleString('es-PY')}\n\nRegistrado por: ${currentUser}`)) {
+                return;
+            }
+            
+            // Procesar pagos uno por uno
+            updateSyncStatus('syncing', 'Procesando pagos...');
+            
+            let successCount = 0;
+            let errorCount = 0;
+            
+            // NO agregar localmente hasta confirmar éxito
+            const tempAdvances = [];
+            
+            for (const advance of advancesToCreate) {
+                try {
+                    const result = await saveToSheets('create', advance);
+                    
+                    if (result && result.id) {
+                        advance.id = result.id;
+                        tempAdvances.push(advance);
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
+                } catch (error) {
+                    console.error('Error procesando adelanto:', error);
+                    errorCount++;
+                }
+            }
+            
+            // Cerrar modal primero
+            closeBulkModal();
+            
+            // Mostrar resultado
+            if (errorCount === 0) {
+                showNotification(`✅ ${successCount} pagos procesados exitosamente - Total: ₲ ${totalAmount.toLocaleString('es-PY')}`);
+                updateSyncStatus('success', 'Pagos procesados');
+            } else {
+                showNotification(`⚠️ Procesados: ${successCount}, Errores: ${errorCount}`);
+                updateSyncStatus('error', `${errorCount} errores`);
+            }
+            
+            // Recargar datos inmediatamente desde Google Sheets para evitar duplicados
+            await loadData();
+        }
 
-const employeesList = document.getElementById('employeesList');
-employeesList.innerHTML = '<p style="margin-bottom: 15px; color: #666;">Los montos ya están calculados descontando adelantos del mes:</p>';
+        function saveToLocalStorage() {
+            localStorage.setItem('advances_backup', JSON.stringify(advances));
+        }
 
-const baseAmount = parseInt(document.getElementById('bulkAmount').value) || 700000;
-
-uniqueEmployees.forEach(emp => {
-const normalizedName = normalizeEmployeeName(emp);
-const previousAdvances = employeeAdvances[normalizedName] || 0;
-const remainingAmount = Math.max(0, baseAmount - previousAdvances);
-
-const div = document.createElement('div');
-div.style.marginBottom = '15px';
-div.style.padding = '10px';
-div.style.border = '1px solid #e0e0e0';
-div.style.borderRadius = '8px';
-div.style.background = remainingAmount === 0 ? '#ffebee' : '#fff';
-
-div.innerHTML = `
-                   <label style="display: block; cursor: pointer;">
-                       <div style="display: flex; align-items: center; margin-bottom: 5px;">
-                           <input type="checkbox" value="${emp}" style="margin-right: 10px;" ${remainingAmount > 0 ? 'checked' : ''}>
-                           <span style="font-weight: bold;">${emp}</span>
-                       </div>
-                       <div style="margin-left: 30px; font-size: 14px; color: #666;">
-                           Adelantos del mes: ₲ ${previousAdvances.toLocaleString('es-PY')}
-                       </div>
-                       <div style="margin-left: 30px; display: flex; align-items: center; gap: 10px;">
-                           <span style="font-size: 14px;">Saldo a pagar:</span>
-                           <input type="number" value="${remainingAmount}" step="1000" 
-                                  style="width: 150px; font-weight: bold; color: ${remainingAmount === 0 ? '#d32f2f' : '#1976d2'};" 
-                                  placeholder="Monto">
-                           <span style="font-size: 12px; color: #888;">(Base: ₲ ${baseAmount.toLocaleString('es-PY')})</span>
-                       </div>
-                   </label>
-               `;
-
-employeesList.appendChild(div);
-});
-
-// Agregar resumen
-const totalAdvances = Object.values(employeeAdvances).reduce((sum, val) => sum + val, 0);
-const totalEmployees = Object.keys(uniqueEmployeesMap).length;
-const totalToPay = uniqueEmployees.reduce((sum, emp) => {
-const normalized = normalizeEmployeeName(emp);
-const prev = employeeAdvances[normalized] || 0;
-return sum + Math.max(0, baseAmount - prev);
-}, 0);
-
-const summary = document.createElement('div');
-summary.style.marginTop = '20px';
-summary.style.padding = '15px';
-summary.style.background = '#f5f5f5';
-summary.style.borderRadius = '8px';
-summary.innerHTML = `
-               <h4 style="margin-bottom: 10px;">📊 Resumen del Mes</h4>
-               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
-                   <div>Total empleados: <strong>${totalEmployees}</strong></div>
-                   <div>Adelantos ya pagados: <strong>₲ ${totalAdvances.toLocaleString('es-PY')}</strong></div>
-                   <div>Base mensual total: <strong>₲ ${(baseAmount * totalEmployees).toLocaleString('es-PY')}</strong></div>
-                   <div style="color: #1976d2;">Saldo a pagar: <strong>₲ ${totalToPay.toLocaleString('es-PY')}</strong></div>
-               </div>
-           `;
-employeesList.appendChild(summary);
-
-document.getElementById('bulkModal').style.display = 'flex';
-}
-
-function closeBulkModal() {
-document.getElementById('bulkModal').style.display = 'none';
-document.getElementById('customEmployees').innerHTML = '';
-}
-
-function selectAllEmployees() {
-const checkboxes = document.querySelectorAll('#employeesList input[type="checkbox"]');
-checkboxes.forEach(cb => {
-// Solo seleccionar si el monto es mayor a 0
-const amountInput = cb.parentElement.parentElement.querySelector('input[type="number"]');
-if (amountInput && parseInt(amountInput.value) > 0) {
-cb.checked = true;
-}
-});
-}
-
-function deselectAllEmployees() {
-const checkboxes = document.querySelectorAll('#employeesList input[type="checkbox"]');
-checkboxes.forEach(cb => cb.checked = false);
-}
-
-function addNewEmployeeLine() {
-const customEmployees = document.getElementById('customEmployees');
-const baseAmount = parseInt(document.getElementById('bulkAmount').value) || 700000;
-
-const div = document.createElement('div');
-div.style.marginBottom = '10px';
-div.innerHTML = `
-               <div style="display: flex; gap: 10px; align-items: center;">
-                   <input type="text" placeholder="Nombre del empleado nuevo" style="flex: 1;">
-                   <input type="number" value="${baseAmount}" step="1000" placeholder="Monto" style="width: 150px;">
-                   <button onclick="this.parentElement.parentElement.remove()" style="padding: 5px 10px;">❌</button>
-               </div>
-           `;
-customEmployees.appendChild(div);
-}
-
-// Actualizar montos cuando cambia el monto base
-document.addEventListener('DOMContentLoaded', function() {
-const bulkAmountInput = document.getElementById('bulkAmount');
-if (bulkAmountInput) {
-bulkAmountInput.addEventListener('change', function() {
-if (document.getElementById('bulkModal').style.display === 'flex') {
-openBulkPayment(); // Recalcular todo
-}
-});
-}
-});
-
-async function processBulkPayment() {
-const bulkDate = document.getElementById('bulkDate').value;
-
-if (!bulkDate) {
-alert('Por favor seleccione una fecha');
-return;
-}
-
-const advancesToCreate = [];
-
-// Obtener empleados seleccionados
-const employeeRows = document.querySelectorAll('#employeesList > div');
-employeeRows.forEach(row => {
-const checkbox = row.querySelector('input[type="checkbox"]');
-const amountInput = row.querySelector('input[type="number"]');
-if (checkbox && checkbox.checked && amountInput) {
-const amount = parseInt(amountInput.value);
-if (amount > 0) {
-advancesToCreate.push({
-date: bulkDate,
-employeeName: checkbox.value,
-amount: amount,
-notes: 'Pago mensual (adelanto descontado)',
-registeredBy: currentUser,
-registeredAt: new Date().toISOString()
-});
-}
-}
-});
-
-// Obtener empleados personalizados
-const customRows = document.querySelectorAll('#customEmployees > div');
-customRows.forEach(row => {
-const nameInput = row.querySelector('input[type="text"]');
-const amountInput = row.querySelector('input[type="number"]');
-if (nameInput && nameInput.value.trim() && amountInput) {
-const amount = parseInt(amountInput.value);
-if (amount > 0) {
-advancesToCreate.push({
-date: bulkDate,
-employeeName: nameInput.value.trim(),
-amount: amount,
-notes: 'Pago mensual',
-registeredBy: currentUser,
-registeredAt: new Date().toISOString()
-});
-}
-}
-});
-
-if (advancesToCreate.length === 0) {
-alert('No hay empleados seleccionados o todos tienen saldo 0');
-return;
-}
-
-const totalAmount = advancesToCreate.reduce((sum, adv) => sum + adv.amount, 0);
-
-if (!confirm(`¿Confirma el pago masivo?\n\nEmpleados: ${advancesToCreate.length}\nTotal a pagar: ₲ ${totalAmount.toLocaleString('es-PY')}\n\nRegistrado por: ${currentUser}`)) {
-return;
-}
-
-// Procesar pagos uno por uno
-updateSyncStatus('syncing', 'Procesando pagos...');
-
-let successCount = 0;
-let errorCount = 0;
-
-// NO agregar localmente hasta confirmar éxito
-const tempAdvances = [];
-
-for (const advance of advancesToCreate) {
-try {
-const result = await saveToSheets('create', advance);
-
-if (result && result.id) {
-advance.id = result.id;
-tempAdvances.push(advance);
-successCount++;
-} else {
-errorCount++;
-}
-} catch (error) {
-console.error('Error procesando adelanto:', error);
-errorCount++;
-}
-}
-
-// Cerrar modal primero
-closeBulkModal();
-
-// Mostrar resultado
-if (errorCount === 0) {
-showNotification(`✅ ${successCount} pagos procesados exitosamente - Total: ₲ ${totalAmount.toLocaleString('es-PY')}`);
-updateSyncStatus('success', 'Pagos procesados');
-} else {
-showNotification(`⚠️ Procesados: ${successCount}, Errores: ${errorCount}`);
-updateSyncStatus('error', `${errorCount} errores`);
-}
-
-// Recargar datos inmediatamente desde Google Sheets para evitar duplicados
-await loadData();
-}
-
-function saveToLocalStorage() {
-localStorage.setItem('advances_backup', JSON.stringify(advances));
-}
-
-// Función para verificar integridad de datos
-function checkDataIntegrity() {
-console.log('=== VERIFICACIÓN DE INTEGRIDAD DE DATOS ===');
-console.log(`Total de registros: ${advances.length}`);
-
-// Buscar duplicados por ID
-const ids = advances.map(a => a.id);
-const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index);
-if (duplicateIds.length > 0) {
-console.warn('IDs duplicados encontrados:', duplicateIds);
-}
-
-// Verificar montos
-let invalidAmounts = 0;
-let totalCalculated = 0;
-advances.forEach((adv, index) => {
-if (!adv.amount || isNaN(adv.amount)) {
-console.warn(`Registro ${index} tiene monto inválido:`, adv);
-invalidAmounts++;
-} else {
-totalCalculated += parseInt(adv.amount);
-}
-});
-
-console.log(`Monto total calculado: ₲ ${totalCalculated.toLocaleString('es-PY')}`);
-console.log(`Registros con montos inválidos: ${invalidAmounts}`);
-
-// Detectar variaciones de nombres
-const nameVariations = {};
-const normalizedToOriginal = {};
-
-advances.forEach(adv => {
-const normalized = normalizeEmployeeName(adv.employeeName);
-if (!normalizedToOriginal[normalized]) {
-normalizedToOriginal[normalized] = new Set();
-}
-normalizedToOriginal[normalized].add(adv.employeeName);
-});
-
-console.log('\n=== ANÁLISIS DE NOMBRES DE EMPLEADOS ===');
-Object.entries(normalizedToOriginal).forEach(([normalized, originals]) => {
-if (originals.size > 1) {
-console.warn(`Variaciones detectadas para "${normalized}":`);
-originals.forEach(original => {
-console.log(`  - "${original}"`);
-});
-}
-});
-
-// Mostrar resumen por empleado (usando nombres normalizados)
-const employeeSummary = {};
-advances.forEach(adv => {
-const normalizedName = normalizeEmployeeName(adv.employeeName);
-if (!employeeSummary[normalizedName]) {
-employeeSummary[normalizedName] = {
-count: 0,
-total: 0,
-originalNames: new Set()
-};
-}
-employeeSummary[normalizedName].count++;
-employeeSummary[normalizedName].total += parseInt(adv.amount) || 0;
-employeeSummary[normalizedName].originalNames.add(adv.employeeName);
-});
-
-console.log('\nResumen por empleado (nombres normalizados):');
-Object.entries(employeeSummary).forEach(([name, data]) => {
-const namesStr = data.originalNames.size > 1 
-? ` (variaciones: ${Array.from(data.originalNames).join(', ')})` 
-: '';
-console.log(`- ${Array.from(data.originalNames)[0]}: ${data.count} adelantos, Total: ₲ ${data.total.toLocaleString('es-PY')}${namesStr}`);
-});
-
-// Buscar registros recientes potencialmente duplicados
-const recentDate = new Date();
-recentDate.setHours(recentDate.getHours() - 1); // Última hora
-const recentAdvances = advances.filter(a => {
-const advDate = new Date(a.registeredAt || a.date);
-return advDate > recentDate;
-});
-
-if (recentAdvances.length > 0) {
-console.log(`\nAdelantos registrados en la última hora: ${recentAdvances.length}`);
-recentAdvances.forEach(adv => {
-console.log(`- ${adv.employeeName}: ₲ ${adv.amount.toLocaleString('es-PY')} (${adv.date})`);
-});
-}
-
-// Detectar posibles duplicados de nombres
-const possibleDuplicates = [];
-Object.entries(normalizedToOriginal).forEach(([normalized, originals]) => {
-if (originals.size > 1) {
-possibleDuplicates.push({
-normalized,
-variations: Array.from(originals)
-});
-}
-});
-
-let alertMessage = `Verificación completada. 
+        // Función para verificar integridad de datos
+        function checkDataIntegrity() {
+            console.log('=== VERIFICACIÓN DE INTEGRIDAD DE DATOS ===');
+            console.log(`Total de registros: ${advances.length}`);
+            
+            // Buscar duplicados por ID
+            const ids = advances.map(a => a.id);
+            const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index);
+            if (duplicateIds.length > 0) {
+                console.warn('IDs duplicados encontrados:', duplicateIds);
+            }
+            
+            // Verificar montos
+            let invalidAmounts = 0;
+            let totalCalculated = 0;
+            advances.forEach((adv, index) => {
+                if (!adv.amount || isNaN(adv.amount)) {
+                    console.warn(`Registro ${index} tiene monto inválido:`, adv);
+                    invalidAmounts++;
+                } else {
+                    totalCalculated += parseInt(adv.amount);
+                }
+            });
+            
+            console.log(`Monto total calculado: ₲ ${totalCalculated.toLocaleString('es-PY')}`);
+            console.log(`Registros con montos inválidos: ${invalidAmounts}`);
+            
+            // Detectar variaciones de nombres
+            const nameVariations = {};
+            const normalizedToOriginal = {};
+            
+            advances.forEach(adv => {
+                const normalized = normalizeEmployeeName(adv.employeeName);
+                if (!normalizedToOriginal[normalized]) {
+                    normalizedToOriginal[normalized] = new Set();
+                }
+                normalizedToOriginal[normalized].add(adv.employeeName);
+            });
+            
+            console.log('\n=== ANÁLISIS DE NOMBRES DE EMPLEADOS ===');
+            Object.entries(normalizedToOriginal).forEach(([normalized, originals]) => {
+                if (originals.size > 1) {
+                    console.warn(`Variaciones detectadas para "${normalized}":`);
+                    originals.forEach(original => {
+                        console.log(`  - "${original}"`);
+                    });
+                }
+            });
+            
+            // Mostrar resumen por empleado (usando nombres normalizados)
+            const employeeSummary = {};
+            advances.forEach(adv => {
+                const normalizedName = normalizeEmployeeName(adv.employeeName);
+                if (!employeeSummary[normalizedName]) {
+                    employeeSummary[normalizedName] = {
+                        count: 0,
+                        total: 0,
+                        originalNames: new Set()
+                    };
+                }
+                employeeSummary[normalizedName].count++;
+                employeeSummary[normalizedName].total += parseInt(adv.amount) || 0;
+                employeeSummary[normalizedName].originalNames.add(adv.employeeName);
+            });
+            
+            console.log('\nResumen por empleado (nombres normalizados):');
+            Object.entries(employeeSummary).forEach(([name, data]) => {
+                const namesStr = data.originalNames.size > 1 
+                    ? ` (variaciones: ${Array.from(data.originalNames).join(', ')})` 
+                    : '';
+                console.log(`- ${Array.from(data.originalNames)[0]}: ${data.count} adelantos, Total: ₲ ${data.total.toLocaleString('es-PY')}${namesStr}`);
+            });
+            
+            // Buscar registros recientes potencialmente duplicados
+            const recentDate = new Date();
+            recentDate.setHours(recentDate.getHours() - 1); // Última hora
+            const recentAdvances = advances.filter(a => {
+                const advDate = new Date(a.registeredAt || a.date);
+                return advDate > recentDate;
+            });
+            
+            if (recentAdvances.length > 0) {
+                console.log(`\nAdelantos registrados en la última hora: ${recentAdvances.length}`);
+                recentAdvances.forEach(adv => {
+                    console.log(`- ${adv.employeeName}: ₲ ${adv.amount.toLocaleString('es-PY')} (${adv.date})`);
+                });
+            }
+            
+            // Detectar posibles duplicados de nombres
+            const possibleDuplicates = [];
+            Object.entries(normalizedToOriginal).forEach(([normalized, originals]) => {
+                if (originals.size > 1) {
+                    possibleDuplicates.push({
+                        normalized,
+                        variations: Array.from(originals)
+                    });
+                }
+            });
+            
+            let alertMessage = `Verificación completada. 
 Total registros: ${advances.length}
 Monto total: ₲ ${totalCalculated.toLocaleString('es-PY')}
 Empleados únicos (normalizados): ${Object.keys(employeeSummary).length}`;
 
-if (possibleDuplicates.length > 0) {
-alertMessage += `\n\n⚠️ Se detectaron ${possibleDuplicates.length} empleados con variaciones en el nombre.`;
-}
+            if (possibleDuplicates.length > 0) {
+                alertMessage += `\n\n⚠️ Se detectaron ${possibleDuplicates.length} empleados con variaciones en el nombre.`;
+            }
 
-alertMessage += '\n\nRevise la consola del navegador (F12) para más detalles.';
-
-alert(alertMessage);
-}
+            alertMessage += '\n\nRevise la consola del navegador (F12) para más detalles.';
+            
+            alert(alertMessage);
+        }
 
         // Mostrar diálogo para actualizar registros antiguos
         function showUpdateOldRecordsDialog() {
@@ -1856,93 +1847,93 @@ alert(alertMessage);
                   `⚠️ NOTA: Los cambios están guardados localmente.`);
         }
 
-// Mostrar diálogo de normalización de nombres
-function showNameNormalizationDialog() {
-// Detectar todas las variaciones de nombres
-const normalizedToOriginal = {};
-advances.forEach(adv => {
-const normalized = normalizeEmployeeName(adv.employeeName);
-if (!normalizedToOriginal[normalized]) {
-normalizedToOriginal[normalized] = [];
-}
-if (!normalizedToOriginal[normalized].includes(adv.employeeName)) {
-normalizedToOriginal[normalized].push(adv.employeeName);
-}
-});
-
-// Filtrar solo los que tienen variaciones
-const variations = Object.entries(normalizedToOriginal)
-.filter(([_, originals]) => originals.length > 1)
-.map(([normalized, originals]) => ({
-normalized,
-originals: originals.sort(),
-preferred: originals[0] // Por defecto, usar el primero alfabéticamente
-}));
-
-if (variations.length === 0) {
-alert('✅ No se detectaron variaciones de nombres. Todo está normalizado correctamente.');
-return;
-}
-
-let message = `Se detectaron ${variations.length} empleados con variaciones en sus nombres:\n\n`;
-
-variations.forEach((v, index) => {
-message += `${index + 1}. Variaciones encontradas:\n`;
-v.originals.forEach(name => {
-message += `   - "${name}"\n`;
-});
-message += `   → Se normalizará a: "${v.preferred}"\n\n`;
-});
-
-message += `¿Desea normalizar todos los nombres?\n\n`;
-message += `⚠️ IMPORTANTE: Esta acción modificará todos los registros. Se recomienda exportar una copia de respaldo primero.`;
-
-if (confirm(message)) {
-normalizeAllNames(variations);
-}
-}
-
-// Normalizar todos los nombres
-async function normalizeAllNames(variations) {
-updateSyncStatus('syncing', 'Normalizando nombres...');
-
-const normalizations = {};
-variations.forEach(v => {
-v.originals.forEach(original => {
-if (original !== v.preferred) {
-normalizations[original] = v.preferred;
-}
-});
-});
-
-let updateCount = 0;
-const totalToUpdate = advances.filter(a => normalizations[a.employeeName]).length;
-
-if (totalToUpdate === 0) {
-alert('No hay nombres para normalizar.');
-return;
-}
-
-// Actualizar localmente primero
-advances.forEach(advance => {
-if (normalizations[advance.employeeName]) {
-advance.employeeName = normalizations[advance.employeeName];
-updateCount++;
-}
-});
-
-// Guardar cambios
-localStorage.setItem('advances_backup', JSON.stringify(advances));
-
-// Actualizar la vista
-renderAll();
-
-updateSyncStatus('success', 'Nombres normalizados');
-showNotification(`✅ Se normalizaron ${updateCount} registros exitosamente`);
-
-// Nota: En producción, aquí deberías enviar los cambios a Google Sheets
-alert(`Se normalizaron ${updateCount} registros.\n\n⚠️ NOTA: Los cambios están guardados localmente. Para sincronizar con Google Sheets, deberá actualizar manualmente cada registro o implementar una función de actualización masiva en el backend.`);
-}
-</script>
+        // Mostrar diálogo de normalización de nombres
+        function showNameNormalizationDialog() {
+            // Detectar todas las variaciones de nombres
+            const normalizedToOriginal = {};
+            advances.forEach(adv => {
+                const normalized = normalizeEmployeeName(adv.employeeName);
+                if (!normalizedToOriginal[normalized]) {
+                    normalizedToOriginal[normalized] = [];
+                }
+                if (!normalizedToOriginal[normalized].includes(adv.employeeName)) {
+                    normalizedToOriginal[normalized].push(adv.employeeName);
+                }
+            });
+            
+            // Filtrar solo los que tienen variaciones
+            const variations = Object.entries(normalizedToOriginal)
+                .filter(([_, originals]) => originals.length > 1)
+                .map(([normalized, originals]) => ({
+                    normalized,
+                    originals: originals.sort(),
+                    preferred: originals[0] // Por defecto, usar el primero alfabéticamente
+                }));
+            
+            if (variations.length === 0) {
+                alert('✅ No se detectaron variaciones de nombres. Todo está normalizado correctamente.');
+                return;
+            }
+            
+            let message = `Se detectaron ${variations.length} empleados con variaciones en sus nombres:\n\n`;
+            
+            variations.forEach((v, index) => {
+                message += `${index + 1}. Variaciones encontradas:\n`;
+                v.originals.forEach(name => {
+                    message += `   - "${name}"\n`;
+                });
+                message += `   → Se normalizará a: "${v.preferred}"\n\n`;
+            });
+            
+            message += `¿Desea normalizar todos los nombres?\n\n`;
+            message += `⚠️ IMPORTANTE: Esta acción modificará todos los registros. Se recomienda exportar una copia de respaldo primero.`;
+            
+            if (confirm(message)) {
+                normalizeAllNames(variations);
+            }
+        }
+        
+        // Normalizar todos los nombres
+        async function normalizeAllNames(variations) {
+            updateSyncStatus('syncing', 'Normalizando nombres...');
+            
+            const normalizations = {};
+            variations.forEach(v => {
+                v.originals.forEach(original => {
+                    if (original !== v.preferred) {
+                        normalizations[original] = v.preferred;
+                    }
+                });
+            });
+            
+            let updateCount = 0;
+            const totalToUpdate = advances.filter(a => normalizations[a.employeeName]).length;
+            
+            if (totalToUpdate === 0) {
+                alert('No hay nombres para normalizar.');
+                return;
+            }
+            
+            // Actualizar localmente primero
+            advances.forEach(advance => {
+                if (normalizations[advance.employeeName]) {
+                    advance.employeeName = normalizations[advance.employeeName];
+                    updateCount++;
+                }
+            });
+            
+            // Guardar cambios
+            localStorage.setItem('advances_backup', JSON.stringify(advances));
+            
+            // Actualizar la vista
+            renderAll();
+            
+            updateSyncStatus('success', 'Nombres normalizados');
+            showNotification(`✅ Se normalizaron ${updateCount} registros exitosamente`);
+            
+            // Nota: En producción, aquí deberías enviar los cambios a Google Sheets
+            alert(`Se normalizaron ${updateCount} registros.\n\n⚠️ NOTA: Los cambios están guardados localmente. Para sincronizar con Google Sheets, deberá actualizar manualmente cada registro o implementar una función de actualización masiva en el backend.`);
+        }
+    </script>
 </body>
 </html>
