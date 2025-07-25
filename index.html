@@ -863,48 +863,54 @@ function doPost(e) {
 
         // Guardar en Google Sheets
         async function saveToSheets(action, data) {
-            if (!WEB_APP_URL) return false;
+    if (!WEB_APP_URL) return false;
+    
+    updateSyncStatus('syncing', 'Guardando...');
+    
+    try {
+        console.log('Enviando a Google Sheets:', { action, ...data });
+        
+        const response = await fetch(WEB_APP_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json', // ✅ CORRECTO
+            },
+            body: JSON.stringify({ action, ...data })
+        });
+        
+        // ✅ LEER LA RESPUESTA REAL
+        const result = await response.json();
+        console.log('Respuesta de Google Sheets:', result);
+        
+        if (result.status === 'success') {
+            updateSyncStatus('success', 'Guardado');
+            setTimeout(() => updateSyncStatus('', '✓ En línea'), 2000);
             
-            updateSyncStatus('syncing', 'Guardando...');
+            // Guardar backup local solo si fue exitoso
+            localStorage.setItem('advances_backup', JSON.stringify(advances));
             
-            try {
-                const response = await fetch(WEB_APP_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // Evitar problemas de CORS
-                    headers: {
-                        'Content-Type': 'text/plain',
-                    },
-                    body: JSON.stringify({ action, ...data })
-                });
-                
-                // Con no-cors no podemos leer la respuesta, así que asumimos éxito
-                updateSyncStatus('success', 'Guardado');
-                setTimeout(() => updateSyncStatus('', '✓ En línea'), 2000);
-                
-                // Guardar backup local
-                localStorage.setItem('advances_backup', JSON.stringify(advances));
-                
-                // Para crear, generar ID local
-                if (action === 'create') {
-                    return { status: 'success', id: Date.now() };
-                }
-                
-                return { status: 'success' };
-                
-            } catch (error) {
-                console.error('Error:', error);
-                updateSyncStatus('error', 'Error al guardar - Modo offline');
-                
-                // Guardar localmente como fallback
-                localStorage.setItem('advances_backup', JSON.stringify(advances));
-                
-                if (action === 'create') {
-                    return { status: 'success', id: Date.now() };
-                }
-                
-                return { status: 'success' };
-            }
+            return result;
+        } else {
+            // ✅ MANEJAR ERRORES REALES
+            console.error('Error del servidor:', result.message);
+            updateSyncStatus('error', 'Error: ' + result.message);
+            alert('Error del servidor: ' + result.message);
+            return false;
         }
+        
+    } catch (error) {
+        console.error('Error de conexión:', error);
+        updateSyncStatus('error', 'Error de conexión');
+        
+        // Solo como último recurso, usar datos locales
+        if (action === 'delete') {
+            alert('Error de conexión. No se pudo eliminar el registro en Google Sheets.');
+            return false;
+        }
+        
+        return false;
+    }
+}
 
         // Inicializar formulario
         function initializeForm() {
@@ -1019,17 +1025,24 @@ function doPost(e) {
 
         // Eliminar adelanto
         async function deleteAdvance(id) {
-            if (!confirm('¿Está seguro de eliminar este adelanto?')) return;
-            
-            const result = await saveToSheets('delete', { id });
-            
-            if (result) {
-                // Recargar datos desde Google Sheets en lugar de eliminar localmente
-                await loadData();
-                showNotification('Adelanto eliminado');
-            }
-        }
-
+    if (!confirm('¿Está seguro de eliminar este adelanto?')) return;
+    
+    console.log('Intentando eliminar ID:', id);
+    
+    const result = await saveToSheets('delete', { 
+        id: String(id), // ✅ Asegurar que sea string
+        deletedBy: currentUser 
+    });
+    
+    if (result && result.status === 'success') {
+        // ✅ Solo recargar si fue exitoso
+        await loadData();
+        showNotification('Adelanto eliminado correctamente');
+    } else {
+        // ✅ Mostrar error si falló
+        showNotification('Error: No se pudo eliminar el adelanto');
+    }
+}
         // Renderizar todo
         function renderAll() {
             renderTable();
