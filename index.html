@@ -450,74 +450,8 @@
             <ol>
                 <li>Crea una nueva hoja de Google Sheets</li>
                 <li>Ve a Extensiones → Apps Script</li>
-                <li>Pega el siguiente código:</li>
-            </ol>
-            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">
-// Código de Google Apps Script
-function doGet(e) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const data = sheet.getDataRange().getValues();
-  
-  // Convertir datos a JSON (omitir encabezados)
-  const jsonData = [];
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0]) { // Si hay ID
-      jsonData.push({
-        id: data[i][0],
-        date: data[i][1],
-        employeeName: data[i][2],
-        amount: data[i][3],
-        notes: data[i][4],
-        registeredBy: data[i][5],
-        registeredAt: data[i][6],
-        modifiedBy: data[i][7],
-        modifiedAt: data[i][8]
-      });
-    }
-  }
-  
-  return ContentService
-    .createTextOutput(JSON.stringify({ status: 'success', data: jsonData }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const params = JSON.parse(e.postData.contents);
-  
-  if (params.action === 'create') {
-    const newRow = [
-      Date.now(), // ID
-      params.date,
-      params.employeeName,
-      params.amount,
-      params.notes || '',
-      params.registeredBy || '',
-      params.registeredAt || new Date().toISOString(),
-      '', // modifiedBy
-      ''  // modifiedAt
-    ];
-    sheet.appendRow(newRow);
-    
-    return ContentService
-      .createTextOutput(JSON.stringify({ status: 'success', id: newRow[0] }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-  
-  // Agregar encabezados si la hoja está vacía
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['ID', 'Fecha', 'Empleado', 'Monto', 'Notas', 'Registrado Por', 'Fecha Registro', 'Modificado Por', 'Fecha Modificación']);
-  }
-  
-  return ContentService
-    .createTextOutput(JSON.stringify({ status: 'success' }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-</pre>
-            <ol start="4">
-                <li>Guarda el script</li>
-                <li>Despliega como Web App (Ejecutar como: Yo, Acceso: Cualquiera)</li>
-                <li>Copia la URL y pégala en el campo de abajo</li>
+                <li>Pega el código proporcionado</li>
+                <li>Guarda y despliega como Web App</li>
             </ol>
             <div class="form-group">
                 <label for="webAppUrl">URL de tu Web App:</label>
@@ -988,10 +922,35 @@ function doPost(e) {
             submitBtn.disabled = false;
         }
 
-        // Actualizar adelanto
+        // Función editAdvance CORREGIDA
+        function editAdvance(id) {
+            console.log('Editando adelanto con ID:', id, 'Tipo:', typeof id);
+            
+            const advance = advances.find(a => {
+                // Comparar como string y número para mayor compatibilidad
+                return String(a.id) === String(id) || Number(a.id) === Number(id);
+            });
+            
+            console.log('Adelanto encontrado:', advance);
+            
+            if (advance) {
+                editingId = String(id); // Asegurar que se guarde como string
+                document.getElementById('editDate').value = advance.date;
+                document.getElementById('editEmployeeName').value = advance.employeeName;
+                document.getElementById('editAmount').value = advance.amount;
+                document.getElementById('editNotes').value = advance.notes || '';
+                document.getElementById('editModal').style.display = 'flex';
+            } else {
+                alert('No se pudo encontrar el adelanto para editar');
+            }
+        }
+
+        // Función updateAdvance CORREGIDA
         async function updateAdvance() {
+            console.log('Actualizando adelanto con ID:', editingId);
+            
             const advance = {
-                id: editingId,
+                id: String(editingId), // Asegurar que se envíe como string
                 date: document.getElementById('editDate').value,
                 employeeName: document.getElementById('editEmployeeName').value,
                 amount: parseInt(document.getElementById('editAmount').value),
@@ -1000,8 +959,13 @@ function doPost(e) {
                 modifiedAt: new Date().toISOString()
             };
 
+            console.log('Datos a enviar:', advance);
+
             // Mantener información original
-            const originalAdvance = advances.find(a => a.id === editingId);
+            const originalAdvance = advances.find(a => 
+                String(a.id) === String(editingId) || Number(a.id) === Number(editingId)
+            );
+            
             if (originalAdvance) {
                 advance.registeredBy = originalAdvance.registeredBy;
                 advance.registeredAt = originalAdvance.registeredAt;
@@ -1010,21 +974,26 @@ function doPost(e) {
             const result = await saveToSheets('update', advance);
             
             if (result) {
-                // Recargar datos desde Google Sheets en lugar de actualizar localmente
+                // Recargar datos desde Google Sheets
                 await loadData();
                 closeModal();
                 showNotification(`Adelanto actualizado por ${currentUser}`);
             }
         }
 
-        // Eliminar adelanto
+        // Función deleteAdvance CORREGIDA
         async function deleteAdvance(id) {
             if (!confirm('¿Está seguro de eliminar este adelanto?')) return;
             
-            const result = await saveToSheets('delete', { id });
+            console.log('Eliminando adelanto con ID:', id);
+            
+            const result = await saveToSheets('delete', { 
+                id: String(id), // Asegurar que se envíe como string
+                deletedBy: currentUser 
+            });
             
             if (result) {
-                // Recargar datos desde Google Sheets en lugar de eliminar localmente
+                // Recargar datos desde Google Sheets
                 await loadData();
                 showNotification('Adelanto eliminado');
             }
@@ -1053,7 +1022,7 @@ function doPost(e) {
             });
         }
 
-        // Renderizar tabla
+        // Función renderTable CORREGIDA
         function renderTable() {
             const tbody = document.getElementById('advancesBody');
             tbody.innerHTML = '';
@@ -1095,6 +1064,9 @@ function doPost(e) {
                     </small>`;
                 }
                 
+                // Asegurar que el ID se pase como string entre comillas
+                const idString = String(advance.id);
+                
                 row.innerHTML = `
                     <td>${formatDate(advance.date)}</td>
                     <td>${advance.employeeName}</td>
@@ -1108,8 +1080,8 @@ function doPost(e) {
                     </td>
                     <td>${lastModifiedInfo}</td>
                     <td class="actions">
-                        <button class="btn-small btn-secondary" onclick="editAdvance(${advance.id})">✏️</button>
-                        <button class="btn-small btn-danger" onclick="deleteAdvance(${advance.id})">🗑️</button>
+                        <button class="btn-small btn-secondary" onclick="editAdvance('${idString}')">✏️</button>
+                        <button class="btn-small btn-danger" onclick="deleteAdvance('${idString}')">🗑️</button>
                     </td>
                 `;
             });
@@ -1344,18 +1316,6 @@ function doPost(e) {
                 const text = row.textContent.toLowerCase();
                 row.style.display = text.includes(searchTerm) ? '' : 'none';
             });
-        }
-
-        function editAdvance(id) {
-            const advance = advances.find(a => a.id === id);
-            if (advance) {
-                editingId = id;
-                document.getElementById('editDate').value = advance.date;
-                document.getElementById('editEmployeeName').value = advance.employeeName;
-                document.getElementById('editAmount').value = advance.amount;
-                document.getElementById('editNotes').value = advance.notes || '';
-                document.getElementById('editModal').style.display = 'flex';
-            }
         }
 
         function closeModal() {
@@ -1640,46 +1600,27 @@ function doPost(e) {
                 return;
             }
             
-            // Procesar pagos uno por uno
+            // Procesar pagos
             updateSyncStatus('syncing', 'Procesando pagos...');
             
-            let successCount = 0;
-            let errorCount = 0;
-            
-            // NO agregar localmente hasta confirmar éxito
-            const tempAdvances = [];
-            
-            for (const advance of advancesToCreate) {
-                try {
-                    const result = await saveToSheets('create', advance);
-                    
-                    if (result && result.id) {
-                        advance.id = result.id;
-                        tempAdvances.push(advance);
-                        successCount++;
-                    } else {
-                        errorCount++;
-                    }
-                } catch (error) {
-                    console.error('Error procesando adelanto:', error);
-                    errorCount++;
-                }
+            try {
+                const result = await saveToSheets('createBulk', {
+                    advances: advancesToCreate,
+                    registeredBy: currentUser
+                });
+                
+                // Cerrar modal primero
+                closeBulkModal();
+                
+                // Mostrar resultado
+                showNotification(`✅ Pagos procesados exitosamente - Total: ₲ ${totalAmount.toLocaleString('es-PY')}`);
+                
+                // Recargar datos inmediatamente
+                await loadData();
+            } catch (error) {
+                console.error('Error procesando pagos:', error);
+                showNotification('⚠️ Error al procesar pagos');
             }
-            
-            // Cerrar modal primero
-            closeBulkModal();
-            
-            // Mostrar resultado
-            if (errorCount === 0) {
-                showNotification(`✅ ${successCount} pagos procesados exitosamente - Total: ₲ ${totalAmount.toLocaleString('es-PY')}`);
-                updateSyncStatus('success', 'Pagos procesados');
-            } else {
-                showNotification(`⚠️ Procesados: ${successCount}, Errores: ${errorCount}`);
-                updateSyncStatus('error', `${errorCount} errores`);
-            }
-            
-            // Recargar datos inmediatamente desde Google Sheets para evitar duplicados
-            await loadData();
         }
 
         function saveToLocalStorage() {
