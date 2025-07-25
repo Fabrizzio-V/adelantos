@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -452,71 +450,7 @@
             <ol>
                 <li>Crea una nueva hoja de Google Sheets</li>
                 <li>Ve a Extensiones → Apps Script</li>
-                <li>Pega el siguiente código:</li>
-            </ol>
-            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">
-// Código de Google Apps Script
-function doGet(e) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const data = sheet.getDataRange().getValues();
-  
-  // Convertir datos a JSON (omitir encabezados)
-  const jsonData = [];
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0]) { // Si hay ID
-      jsonData.push({
-        id: data[i][0],
-        date: data[i][1],
-        employeeName: data[i][2],
-        amount: data[i][3],
-        notes: data[i][4],
-        registeredBy: data[i][5],
-        registeredAt: data[i][6],
-        modifiedBy: data[i][7],
-        modifiedAt: data[i][8]
-      });
-    }
-  }
-  
-  return ContentService
-    .createTextOutput(JSON.stringify({ status: 'success', data: jsonData }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const params = JSON.parse(e.postData.contents);
-  
-  if (params.action === 'create') {
-    const newRow = [
-      Date.now(), // ID
-      params.date,
-      params.employeeName,
-      params.amount,
-      params.notes || '',
-      params.registeredBy || '',
-      params.registeredAt || new Date().toISOString(),
-      '', // modifiedBy
-      ''  // modifiedAt
-    ];
-    sheet.appendRow(newRow);
-    
-    return ContentService
-      .createTextOutput(JSON.stringify({ status: 'success', id: newRow[0] }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-  
-  // Agregar encabezados si la hoja está vacía
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['ID', 'Fecha', 'Empleado', 'Monto', 'Notas', 'Registrado Por', 'Fecha Registro', 'Modificado Por', 'Fecha Modificación']);
-  }
-  
-  return ContentService
-    .createTextOutput(JSON.stringify({ status: 'success' }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-</pre>
-            <ol start="4">
+                <li>Pega el código de Apps Script que ya tienes</li>
                 <li>Guarda el script</li>
                 <li>Despliega como Web App (Ejecutar como: Yo, Acceso: Cualquiera)</li>
                 <li>Copia la URL y pégala en el campo de abajo</li>
@@ -620,8 +554,6 @@ function doPost(e) {
                 </table>
             </div>
         </div>
-
-
     </div>
 
     <div id="loginModal" class="modal" style="display: flex;">
@@ -792,114 +724,169 @@ function doPost(e) {
             }
         }
 
-        // Cargar datos desde Google Sheets
+        // ✅ FUNCIÓN CORREGIDA PARA CARGAR DATOS CON JSONP
         async function loadData() {
             if (!WEB_APP_URL) return;
             
             updateSyncStatus('syncing', 'Cargando...');
             
             try {
-                // Intentar cargar desde Google Sheets
-                const response = await fetch(WEB_APP_URL + '?action=read', {
-                    method: 'GET',
-                    mode: 'cors', // Intentar con CORS primero
+                // ✅ Usar JSONP para evitar CORS (como lo hace tu Apps Script)
+                const callbackName = 'jsonp_callback_' + Date.now();
+                const url = WEB_APP_URL + '?action=getData&callback=' + callbackName;
+                
+                const result = await new Promise((resolve, reject) => {
+                    // Crear función callback global
+                    window[callbackName] = function(data) {
+                        delete window[callbackName]; // Limpiar
+                        resolve(data);
+                    };
+                    
+                    // Crear script tag para JSONP
+                    const script = document.createElement('script');
+                    script.src = url;
+                    script.onerror = () => {
+                        delete window[callbackName];
+                        reject(new Error('Error al cargar datos'));
+                    };
+                    
+                    document.head.appendChild(script);
+                    
+                    // Limpiar después de 10 segundos
+                    setTimeout(() => {
+                        if (document.head.contains(script)) {
+                            document.head.removeChild(script);
+                        }
+                        if (window[callbackName]) {
+                            delete window[callbackName];
+                            reject(new Error('Timeout'));
+                        }
+                    }, 10000);
                 });
                 
-                if (response.ok) {
-                    const result = await response.json();
+                if (result.status === 'success') {
+                    // ✅ Limpiar array antes de cargar nuevos datos
+                    advances = [];
                     
-                    if (result.status === 'success') {
-                        // Limpiar array antes de cargar nuevos datos
-                        advances = [];
-                        
-                        // Procesar y validar cada registro
-                        const seenIds = new Set();
-                        result.data.forEach(item => {
-                            // Evitar duplicados por ID
-                            if (item.id && !seenIds.has(item.id)) {
-                                seenIds.add(item.id);
-                                
-                                // Limpiar formato de fecha si viene con hora
-                                if (item.date && typeof item.date === 'string' && item.date.includes('T')) {
-                                    item.date = item.date.split('T')[0];
-                                }
-                                
-                                // Validar que el monto sea un número válido
-                                if (item.amount && !isNaN(parseInt(item.amount))) {
-                                    item.amount = parseInt(item.amount);
-                                    advances.push(item);
-                                }
+                    // ✅ Procesar datos con la estructura correcta de columnas
+                    const seenIds = new Set();
+                    result.data.forEach(item => {
+                        // Evitar duplicados por ID
+                        if (item.id && !seenIds.has(item.id)) {
+                            seenIds.add(item.id);
+                            
+                            // ✅ Limpiar formato de fecha si viene con hora
+                            if (item.date && typeof item.date === 'string' && item.date.includes('T')) {
+                                item.date = item.date.split('T')[0];
                             }
-                        });
-                        
-                        renderAll();
-                        updateSyncStatus('success', 'Sincronizado');
-                        setTimeout(() => updateSyncStatus('', '✓ En línea'), 2000);
-                        
-                        // Guardar backup local
-                        localStorage.setItem('advances_backup', JSON.stringify(advances));
-                        
-                        console.log(`Cargados ${advances.length} adelantos únicos`);
-                    }
+                            
+                            // ✅ Validar que el monto sea un número válido
+                            if (item.amount && !isNaN(parseInt(item.amount))) {
+                                item.amount = parseInt(item.amount);
+                                
+                                // ✅ Estructura corregida para tu Apps Script
+                                const advance = {
+                                    id: item.id,
+                                    date: item.date,
+                                    employeeName: item.employeeName,
+                                    amount: item.amount,
+                                    notes: item.notes || '',
+                                    registeredBy: item.registeredBy || 'Sistema anterior',
+                                    registeredAt: item.registeredAt || '',
+                                    type: item.type || 'Adelanto Individual', // ✅ Nueva columna
+                                    modifiedBy: item.modifiedBy || '',
+                                    modifiedAt: item.modifiedAt || ''
+                                };
+                                
+                                advances.push(advance);
+                            }
+                        }
+                    });
+                    
+                    renderAll();
+                    updateSyncStatus('success', 'Sincronizado');
+                    setTimeout(() => updateSyncStatus('', '✓ En línea'), 2000);
+                    
+                    // Guardar backup local
+                    localStorage.setItem('advances_backup', JSON.stringify(advances));
+                    
+                    console.log(`Cargados ${advances.length} adelantos únicos`);
+                } else {
+                    console.error('Error del servidor:', result.message);
+                    updateSyncStatus('error', 'Error del servidor');
+                    loadLocalBackup();
                 }
+                
             } catch (error) {
                 console.error('Error al cargar:', error);
                 updateSyncStatus('error', 'Modo Offline');
-                
-                // Cargar datos locales como respaldo
-                const localData = localStorage.getItem('advances_backup');
-                if (localData) {
-                    advances = JSON.parse(localData);
-                    renderAll();
-                    showNotification('Trabajando con datos locales');
-                } else {
-                    // Si no hay datos locales, inicializar con array vacío
-                    advances = [];
-                    renderAll();
-                }
+                loadLocalBackup();
             }
             
             document.getElementById('tableLoading').style.display = 'none';
             document.getElementById('advancesTable').style.display = 'table';
         }
 
-        // Guardar en Google Sheets
+        // ✅ FUNCIÓN PARA CARGAR BACKUP LOCAL
+        function loadLocalBackup() {
+            const localData = localStorage.getItem('advances_backup');
+            if (localData) {
+                advances = JSON.parse(localData);
+                renderAll();
+                showNotification('Trabajando con datos locales', 'warning');
+            } else {
+                advances = [];
+                renderAll();
+            }
+        }
+
+        // ✅ FUNCIÓN CORREGIDA PARA GUARDAR (USA FETCH NORMAL PARA POST)
         async function saveToSheets(action, data) {
             if (!WEB_APP_URL) return false;
             
             updateSyncStatus('syncing', 'Guardando...');
             
             try {
+                // ✅ Para POST, tu Apps Script funciona con fetch normal
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Evitar problemas de CORS
                     headers: {
-                        'Content-Type': 'text/plain',
+                        'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ action, ...data })
                 });
                 
-                // Con no-cors no podemos leer la respuesta, así que asumimos éxito
-                updateSyncStatus('success', 'Guardado');
-                setTimeout(() => updateSyncStatus('', '✓ En línea'), 2000);
-                
-                // Guardar backup local
-                localStorage.setItem('advances_backup', JSON.stringify(advances));
-                
-                // Para crear, generar ID local
-                if (action === 'create') {
-                    return { status: 'success', id: Date.now() };
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
-                return { status: 'success' };
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    updateSyncStatus('success', 'Guardado');
+                    setTimeout(() => updateSyncStatus('', '✓ En línea'), 2000);
+                    
+                    // Guardar backup local
+                    localStorage.setItem('advances_backup', JSON.stringify(advances));
+                    
+                    return result;
+                    
+                } else {
+                    console.error('Error del servidor:', result.message);
+                    updateSyncStatus('error', `Error: ${result.message}`);
+                    showNotification(`❌ Error: ${result.message}`, 'error');
+                    return false;
+                }
                 
             } catch (error) {
-                console.error('Error:', error);
-                updateSyncStatus('error', 'Error al guardar - Modo offline');
+                console.error('Error de conexión:', error);
+                updateSyncStatus('error', 'Error de conexión');
+                showNotification('❌ Error de conexión. Trabajando en modo offline.', 'error');
                 
                 // Guardar localmente como fallback
                 localStorage.setItem('advances_backup', JSON.stringify(advances));
                 
+                // En modo offline, simular éxito para la UI
                 if (action === 'create') {
                     return { status: 'success', id: Date.now() };
                 }
@@ -960,7 +947,7 @@ function doPost(e) {
             }
         }
 
-        // Agregar adelanto
+        // ✅ FUNCIÓN ADDADVANCE CORREGIDA
         async function addAdvance() {
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
@@ -970,27 +957,29 @@ function doPost(e) {
                 employeeName: document.getElementById('employeeName').value,
                 amount: parseInt(document.getElementById('amount').value),
                 notes: document.getElementById('notes').value,
-                registeredBy: currentUser, // Agregar usuario que registra
-                registeredAt: new Date().toISOString() // Agregar timestamp
+                registeredBy: currentUser,
+                registeredAt: new Date().toISOString(),
+                type: 'Adelanto Individual' // ✅ Incluir tipo para tu Apps Script
             };
 
             const result = await saveToSheets('create', advance);
             
-            if (result && result.id) {
-                // Recargar datos desde Google Sheets en lugar de agregar localmente
-                // Esto evita duplicados
+            if (result && result.status === 'success') {
+                // ✅ Solo recargar si realmente se guardó
                 await loadData();
                 
                 document.getElementById('advanceForm').reset();
                 document.getElementById('date').value = new Date().toISOString().split('T')[0];
                 
-                showNotification(`Adelanto registrado por ${currentUser}`);
+                showNotification(`✅ Adelanto registrado por ${currentUser}`);
+            } else {
+                showNotification('❌ Error al registrar adelanto', 'error');
             }
             
             submitBtn.disabled = false;
         }
 
-        // Actualizar adelanto
+        // ✅ FUNCIÓN UPDATEADVANCE CORREGIDA
         async function updateAdvance() {
             const advance = {
                 id: editingId,
@@ -1002,33 +991,31 @@ function doPost(e) {
                 modifiedAt: new Date().toISOString()
             };
 
-            // Mantener información original
-            const originalAdvance = advances.find(a => a.id === editingId);
-            if (originalAdvance) {
-                advance.registeredBy = originalAdvance.registeredBy;
-                advance.registeredAt = originalAdvance.registeredAt;
-            }
-
             const result = await saveToSheets('update', advance);
             
-            if (result) {
-                // Recargar datos desde Google Sheets en lugar de actualizar localmente
+            if (result && result.status === 'success') {
                 await loadData();
                 closeModal();
-                showNotification(`Adelanto actualizado por ${currentUser}`);
+                showNotification(`✅ Adelanto actualizado por ${currentUser}`);
+            } else {
+                showNotification('❌ Error al actualizar adelanto', 'error');
             }
         }
 
-        // Eliminar adelanto
+        // ✅ FUNCIÓN DELETEADVANCE CORREGIDA
         async function deleteAdvance(id) {
             if (!confirm('¿Está seguro de eliminar este adelanto?')) return;
             
-            const result = await saveToSheets('delete', { id });
+            const result = await saveToSheets('delete', { 
+                id: id,
+                deletedBy: currentUser 
+            });
             
-            if (result) {
-                // Recargar datos desde Google Sheets en lugar de eliminar localmente
+            if (result && result.status === 'success') {
                 await loadData();
-                showNotification('Adelanto eliminado');
+                showNotification('✅ Adelanto eliminado correctamente');
+            } else {
+                showNotification('❌ Error al eliminar adelanto', 'error');
             }
         }
 
@@ -1055,7 +1042,7 @@ function doPost(e) {
             });
         }
 
-        // Renderizar tabla
+        // ✅ FUNCIÓN RENDERTABLE CORREGIDA
         function renderTable() {
             const tbody = document.getElementById('advancesBody');
             tbody.innerHTML = '';
@@ -1084,11 +1071,11 @@ function doPost(e) {
             filteredAdvances.forEach(advance => {
                 const row = tbody.insertRow();
                 
-                // Información de registro original
+                // ✅ Información de registro original
                 const registeredBy = advance.registeredBy || 'Sistema anterior';
                 const registeredAt = advance.registeredAt ? formatDateTime(advance.registeredAt) : '';
                 
-                // Información de última modificación
+                // ✅ Información de última modificación
                 let lastModifiedInfo = '-';
                 if (advance.modifiedBy && advance.modifiedAt) {
                     lastModifiedInfo = `<small style="color: #666;">
@@ -1097,21 +1084,40 @@ function doPost(e) {
                     </small>`;
                 }
                 
+                // ✅ Información del tipo de adelanto (nuevo campo)
+                const typeInfo = advance.type || 'Adelanto Individual';
+                const typeColor = typeInfo.includes('Masivo') ? '#9c27b0' : '#2196f3';
+                
                 row.innerHTML = `
-                    <td>${formatDate(advance.date)}</td>
-                    <td>${advance.employeeName}</td>
-                    <td>₲ ${advance.amount.toLocaleString('es-PY')}</td>
+                    <td>
+                        ${formatDate(advance.date)}
+                        <br><small style="color: ${typeColor}; font-weight: 500;">
+                            ${typeInfo}
+                        </small>
+                    </td>
+                    <td>
+                        <strong>${advance.employeeName}</strong>
+                    </td>
+                    <td>
+                        <span style="font-weight: bold; color: #1976d2;">
+                            ₲ ${advance.amount.toLocaleString('es-PY')}
+                        </span>
+                    </td>
                     <td>${advance.notes || '-'}</td>
                     <td>
                         <small style="color: #666;">
-                            ${registeredBy}
+                            <strong>${registeredBy}</strong>
                             ${registeredAt ? '<br>' + registeredAt : ''}
                         </small>
                     </td>
                     <td>${lastModifiedInfo}</td>
                     <td class="actions">
-                        <button class="btn-small btn-secondary" onclick="editAdvance(${advance.id})">✏️</button>
-                        <button class="btn-small btn-danger" onclick="deleteAdvance(${advance.id})">🗑️</button>
+                        <button class="btn-small btn-secondary" onclick="editAdvance('${advance.id}')" title="Editar">
+                            ✏️
+                        </button>
+                        <button class="btn-small btn-danger" onclick="deleteAdvance('${advance.id}')" title="Eliminar">
+                            🗑️
+                        </button>
                     </td>
                 `;
             });
@@ -1181,7 +1187,7 @@ function doPost(e) {
                 .trim(); // Eliminar espacios al inicio y final
         }
 
-        // Actualizar estadísticas
+        // ✅ FUNCIÓN UPDATESTATS CORREGIDA
         function updateStats() {
             // Filtrar solo adelantos válidos con montos numéricos
             const validAdvances = advances.filter(a => a.amount && !isNaN(a.amount));
@@ -1198,6 +1204,14 @@ function doPost(e) {
             );
             const uniqueEmployees = normalizedEmployees.size;
             
+            // ✅ Estadísticas adicionales por tipo
+            const individualAdvances = validAdvances.filter(a => 
+                !a.type || a.type === 'Adelanto Individual'
+            ).length;
+            const massivePayments = validAdvances.filter(a => 
+                a.type && a.type.includes('Masivo')
+            ).length;
+            
             document.getElementById('totalAdvances').textContent = totalAdvances;
             document.getElementById('totalAmount').textContent = `₲ ${totalAmount.toLocaleString('es-PY')}`;
             document.getElementById('totalEmployees').textContent = uniqueEmployees;
@@ -1208,11 +1222,12 @@ function doPost(e) {
                 registrosValidos: validAdvances.length,
                 montoTotal: totalAmount,
                 empleadosUnicos: uniqueEmployees,
-                empleadosNormalizados: Array.from(normalizedEmployees)
+                adelantosIndividuales: individualAdvances,
+                pagosMasivos: massivePayments
             });
         }
 
-        // Mostrar adelantos de fecha
+        // ✅ FUNCIÓN SHOWADVANCESFORDATE CORREGIDA
         function showAdvancesForDate(date) {
             const dayAdvances = advances.filter(a => a.date === date);
             const dateInfo = document.getElementById('dateAdvancesInfo');
@@ -1231,10 +1246,19 @@ function doPost(e) {
                         ? `<br>Última modificación: ${a.modifiedBy} (${formatDateTime(a.modifiedAt)})` 
                         : '';
                     
+                    // ✅ Mostrar tipo de adelanto con color
+                    const typeInfo = a.type || 'Adelanto Individual';
+                    const typeColor = typeInfo.includes('Masivo') ? '#9c27b0' : '#2196f3';
+                    
                     html += `
                         <div class="date-advance-item">
-                            <strong>${a.employeeName}</strong><br>
-                            <span style="color: #667eea; font-size: 1.2em;">₲ ${a.amount.toLocaleString('es-PY')}</span><br>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <strong style="font-size: 1.1em;">${a.employeeName}</strong>
+                                <span style="background: ${typeColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em;">
+                                    ${typeInfo}
+                                </span>
+                            </div>
+                            <span style="color: #667eea; font-size: 1.2em; font-weight: bold;">₲ ${a.amount.toLocaleString('es-PY')}</span><br>
                             <small style="color: #666;">${a.notes || 'Sin anotaciones'}</small><br>
                             <small style="color: #999; font-style: italic;">
                                 ${registeredInfo}${modifiedInfo}
@@ -1368,8 +1392,9 @@ function doPost(e) {
             loadData();
         }
 
+        // ✅ FUNCIÓN EXPORTTOEXCEL CORREGIDA
         function exportToExcel() {
-            const ws_data = [['Fecha', 'Empleado', 'Monto (₲)', 'Anotaciones', 'Registrado por', 'Fecha de registro', 'Modificado por', 'Fecha de modificación']];
+            const ws_data = [['Fecha', 'Empleado', 'Monto (₲)', 'Anotaciones', 'Tipo', 'Registrado por', 'Fecha de registro', 'Modificado por', 'Fecha de modificación']];
             
             advances.forEach(advance => {
                 ws_data.push([
@@ -1377,6 +1402,7 @@ function doPost(e) {
                     advance.employeeName,
                     advance.amount,
                     advance.notes || '',
+                    advance.type || 'Adelanto Individual', // ✅ Nueva columna
                     advance.registeredBy || 'Sistema anterior',
                     advance.registeredAt ? formatDateTime(advance.registeredAt) : '',
                     advance.modifiedBy || '',
@@ -1391,30 +1417,44 @@ function doPost(e) {
             const filename = `adelantos_sheets_${new Date().toISOString().split('T')[0]}.xlsx`;
             XLSX.writeFile(wb, filename);
             
-            showNotification('Datos exportados a Excel con información completa de auditoría');
+            showNotification('✅ Datos exportados a Excel con información completa de auditoría');
         }
 
-        function showNotification(message) {
+        // ✅ FUNCIÓN SHOWNOTIFICATION MEJORADA
+        function showNotification(message, type = 'success') {
             const notification = document.createElement('div');
+            
+            let bgColor;
+            switch(type) {
+                case 'error': bgColor = '#dc3545'; break;
+                case 'warning': bgColor = '#ffc107'; break;
+                case 'success': 
+                default: bgColor = '#28a745'; break;
+            }
+            
             notification.style.cssText = `
                 position: fixed;
                 top: 70px;
                 right: 20px;
-                background: #28a745;
-                color: white;
+                background: ${bgColor};
+                color: ${type === 'warning' ? '#000' : 'white'};
                 padding: 15px 25px;
                 border-radius: 8px;
                 box-shadow: 0 5px 15px rgba(0,0,0,0.2);
                 z-index: 2000;
                 animation: fadeIn 0.3s ease-out;
+                max-width: 300px;
+                word-wrap: break-word;
             `;
             notification.textContent = message;
             document.body.appendChild(notification);
             
+            const duration = type === 'error' ? 5000 : 3000;
+            
             setTimeout(() => {
                 notification.style.opacity = '0';
                 setTimeout(() => notification.remove(), 300);
-            }, 3000);
+            }, duration);
         }
 
         window.onclick = function(event) {
@@ -1581,6 +1621,7 @@ function doPost(e) {
             }
         });
 
+        // ✅ FUNCIÓN PROCESSBULKPAYMENT CORREGIDA
         async function processBulkPayment() {
             const bulkDate = document.getElementById('bulkDate').value;
             
@@ -1603,9 +1644,7 @@ function doPost(e) {
                             date: bulkDate,
                             employeeName: checkbox.value,
                             amount: amount,
-                            notes: 'Pago mensual (adelanto descontado)',
-                            registeredBy: currentUser,
-                            registeredAt: new Date().toISOString()
+                            notes: 'Pago mensual (adelanto descontado)'
                         });
                     }
                 }
@@ -1623,9 +1662,7 @@ function doPost(e) {
                             date: bulkDate,
                             employeeName: nameInput.value.trim(),
                             amount: amount,
-                            notes: 'Pago mensual',
-                            registeredBy: currentUser,
-                            registeredAt: new Date().toISOString()
+                            notes: 'Pago mensual'
                         });
                     }
                 }
@@ -1642,46 +1679,35 @@ function doPost(e) {
                 return;
             }
             
-            // Procesar pagos uno por uno
+            // ✅ Usar la función createBulk de tu Apps Script
             updateSyncStatus('syncing', 'Procesando pagos...');
             
-            let successCount = 0;
-            let errorCount = 0;
+            const result = await saveToSheets('createBulk', {
+                advances: advancesToCreate,
+                registeredBy: currentUser
+            });
             
-            // NO agregar localmente hasta confirmar éxito
-            const tempAdvances = [];
-            
-            for (const advance of advancesToCreate) {
-                try {
-                    const result = await saveToSheets('create', advance);
-                    
-                    if (result && result.id) {
-                        advance.id = result.id;
-                        tempAdvances.push(advance);
-                        successCount++;
-                    } else {
-                        errorCount++;
-                    }
-                } catch (error) {
-                    console.error('Error procesando adelanto:', error);
-                    errorCount++;
-                }
-            }
-            
-            // Cerrar modal primero
+            // Cerrar modal
             closeBulkModal();
             
-            // Mostrar resultado
-            if (errorCount === 0) {
-                showNotification(`✅ ${successCount} pagos procesados exitosamente - Total: ₲ ${totalAmount.toLocaleString('es-PY')}`);
+            if (result && result.status === 'success') {
+                const successCount = result.created || 0;
+                const totalCount = result.total || advancesToCreate.length;
+                
+                if (successCount === totalCount) {
+                    showNotification(`✅ ${successCount} pagos procesados exitosamente - Total: ₲ ${totalAmount.toLocaleString('es-PY')}`);
+                } else {
+                    showNotification(`⚠️ Procesados: ${successCount}/${totalCount} pagos`, 'warning');
+                }
+                
                 updateSyncStatus('success', 'Pagos procesados');
+                
+                // Recargar datos
+                await loadData();
             } else {
-                showNotification(`⚠️ Procesados: ${successCount}, Errores: ${errorCount}`);
-                updateSyncStatus('error', `${errorCount} errores`);
+                showNotification('❌ Error en el pago masivo', 'error');
+                updateSyncStatus('error', 'Error en pagos');
             }
-            
-            // Recargar datos inmediatamente desde Google Sheets para evitar duplicados
-            await loadData();
         }
 
         function saveToLocalStorage() {
