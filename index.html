@@ -905,7 +905,29 @@ function checkSimilarNames(inputName) {
     }
 }
 
-// Agregar adelanto
+// Función editAdvance CORREGIDA
+function editAdvance(id) {
+    console.log('Editando adelanto con ID:', id, 'Tipo:', typeof id);
+    
+    const advance = advances.find(a => {
+        return String(a.id) === String(id) || Number(a.id) === Number(id);
+    });
+    
+    console.log('Adelanto encontrado:', advance);
+    
+    if (advance) {
+        editingId = String(id);
+        document.getElementById('editDate').value = advance.date;
+        document.getElementById('editEmployeeName').value = advance.employeeName;
+        document.getElementById('editAmount').value = advance.amount;
+        document.getElementById('editNotes').value = advance.notes || '';
+        document.getElementById('editModal').style.display = 'flex';
+    } else {
+        alert('No se pudo encontrar el adelanto para editar');
+    }
+}
+
+// Función updateAdvance SIMPLIFICADA PARA CORS
 async function addAdvance() {
     const submitBtn = document.getElementById('submitBtn');
     submitBtn.disabled = true;
@@ -919,16 +941,27 @@ async function addAdvance() {
         registeredAt: new Date().toISOString()
     };
 
+    // Agregar al array local PRIMERO para feedback inmediato
+    const newId = Date.now().toString();
+    advance.id = newId;
+    advances.push(advance);
+    
+    // Actualizar UI inmediatamente
+    renderAll();
+    showNotification('Registrando adelanto...');
+
+    // Enviar al servidor en segundo plano
     const result = await saveToSheets('create', advance);
 
     if (result && result.status === 'success') {
-        // Recargar datos desde Google Sheets
-        await loadData();
-
         document.getElementById('advanceForm').reset();
         document.getElementById('date').value = new Date().toISOString().split('T')[0];
-
         showNotification(`Adelanto registrado por ${currentUser}`);
+    } else {
+        // Si falla, remover del array local
+        advances = advances.filter(a => a.id !== newId);
+        renderAll();
+        showNotification('Error al registrar adelanto');
     }
 
     submitBtn.disabled = false;
@@ -956,11 +989,31 @@ function editAdvance(id) {
     }
 }
 
-// Función updateAdvance CORREGIDA
+// Función editAdvance CORREGIDA
+function editAdvance(id) {
+    console.log('Editando adelanto con ID:', id, 'Tipo:', typeof id);
+    
+    const advance = advances.find(a => {
+        return String(a.id) === String(id) || Number(a.id) === Number(id);
+    });
+    
+    console.log('Adelanto encontrado:', advance);
+    
+    if (advance) {
+        editingId = String(id);
+        document.getElementById('editDate').value = advance.date;
+        document.getElementById('editEmployeeName').value = advance.employeeName;
+        document.getElementById('editAmount').value = advance.amount;
+        document.getElementById('editNotes').value = advance.notes || '';
+        document.getElementById('editModal').style.display = 'flex';
+    } else {
+        alert('No se pudo encontrar el adelanto para editar');
+    }
+}
 async function updateAdvance() {
     console.log('Actualizando adelanto con ID:', editingId);
     
-    const advance = {
+    const updatedData = {
         id: String(editingId),
         date: document.getElementById('editDate').value,
         employeeName: document.getElementById('editEmployeeName').value,
@@ -970,52 +1023,72 @@ async function updateAdvance() {
         modifiedAt: new Date().toISOString()
     };
 
-    console.log('Datos a enviar:', advance);
-
-    // Mantener información original
-    const originalAdvance = advances.find(a => 
+    // Actualizar en el array local PRIMERO
+    const index = advances.findIndex(a => 
         String(a.id) === String(editingId) || Number(a.id) === Number(editingId)
     );
     
-    if (originalAdvance) {
-        advance.registeredBy = originalAdvance.registeredBy;
-        advance.registeredAt = originalAdvance.registeredAt;
-    }
-
-    const result = await saveToSheets('update', advance);
-
-    if (result && result.status === 'success') {
-        // Recargar datos desde Google Sheets
-        await loadData();
+    if (index !== -1) {
+        // Mantener información original
+        const originalAdvance = advances[index];
+        advances[index] = {
+            ...originalAdvance,
+            ...updatedData,
+            registeredBy: originalAdvance.registeredBy,
+            registeredAt: originalAdvance.registeredAt
+        };
+        
+        // Actualizar UI inmediatamente
+        renderAll();
         closeModal();
-        showNotification(`Adelanto actualizado por ${currentUser}`);
+        showNotification('Actualizando adelanto...');
+
+        // Enviar al servidor en segundo plano
+        const result = await saveToSheets('update', updatedData);
+        
+        if (result && result.status === 'success') {
+            showNotification(`Adelanto actualizado por ${currentUser}`);
+        } else {
+            showNotification('Error al actualizar - verificando datos...');
+            // Recargar para sincronizar
+            setTimeout(() => loadData(), 2000);
+        }
+    } else {
+        showNotification('Error: Adelanto no encontrado');
     }
 }
 
-// Función deleteAdvance COMPLETAMENTE CORREGIDA
+// Función deleteAdvance SIMPLIFICADA PARA CORS
 async function deleteAdvance(id) {
     if (!confirm('¿Está seguro de eliminar este adelanto?')) return;
 
     console.log('Eliminando adelanto con ID:', id);
     
     try {
-        const result = await saveToSheets('delete', { 
-            id: String(id),
-            deletedBy: currentUser 
-        });
-
-        console.log('Respuesta del servidor:', result);
-
-        if (result && result.status === 'success') {
-            // Recargar datos desde Google Sheets
-            await loadData();
+        // Eliminar del array local PRIMERO para feedback inmediato
+        const originalLength = advances.length;
+        advances = advances.filter(adv => String(adv.id) !== String(id));
+        
+        if (advances.length < originalLength) {
+            // Actualizar UI inmediatamente
+            renderTable();
+            showNotification('Eliminando adelanto...');
+            
+            // Enviar al servidor en segundo plano
+            await saveToSheets('delete', { 
+                id: String(id),
+                deletedBy: currentUser 
+            });
+            
             showNotification('Adelanto eliminado correctamente');
         } else {
-            throw new Error(result?.message || 'Error del servidor');
+            showNotification('Error: Adelanto no encontrado');
         }
     } catch (error) {
         console.error('Error eliminando adelanto:', error);
-        showNotification('Error al eliminar el adelanto: ' + error.message);
+        showNotification('Error al eliminar el adelanto');
+        // Recargar para sincronizar
+        await loadData();
     }
 }
 
