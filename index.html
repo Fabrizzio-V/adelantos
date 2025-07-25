@@ -169,10 +169,10 @@ animation: spin 1s linear infinite;
 display: flex;
 gap: 10px;
 flex-wrap: wrap;
-            margin-bottom: 10px;
-        }
+margin-bottom: 10px;
+}
 
-        .button-group:last-of-type {
+.button-group:last-of-type {
 margin-bottom: 20px;
 }
 
@@ -199,7 +199,7 @@ border-collapse: collapse;
 background: white;
 border-radius: 8px;
 overflow: hidden;
-            min-width: 800px;
+min-width: 800px;
 }
 
 th, td {
@@ -212,17 +212,17 @@ th {
 background: #f8f9fa;
 font-weight: 600;
 color: #555;
-            white-space: nowrap;
+white-space: nowrap;
 }
 
 tr:hover {
 background: #f8f9fa;
 }
 
-        td small {
-            display: block;
-            line-height: 1.4;
-        }
+td small {
+display: block;
+line-height: 1.4;
+}
 
 .actions {
 display: flex;
@@ -448,11 +448,8 @@ Usuario: <span id="currentUser" style="font-weight: bold;">No identificado</span
 <h3>⚠️ Configuración Requerida</h3>
 <p>Para usar este sistema, necesitas configurar Google Sheets:</p>
 <ol>
-                <li>Copia el código de Google Apps Script que está abajo</li>
 <li>Crea una nueva hoja de Google Sheets</li>
 <li>Ve a Extensiones → Apps Script</li>
-                <li>Pega el código y guarda</li>
-                <li>Despliega como Web App</li>
                 <li>Pega el siguiente código:</li>
             </ol>
             <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">
@@ -520,7 +517,9 @@ function doPost(e) {
             <ol start="4">
                 <li>Guarda el script</li>
                 <li>Despliega como Web App (Ejecutar como: Yo, Acceso: Cualquiera)</li>
-<li>Copia la URL y pégala en el campo de abajo</li>
+                <li>Copia la URL y pégala en el campo de abajo</li>
+                <li>Pega el código proporcionado</li>
+                <li>Guarda y despliega como Web App</li>
 </ol>
 <div class="form-group">
 <label for="webAppUrl">URL de tu Web App:</label>
@@ -595,11 +594,11 @@ function doPost(e) {
 <button class="btn-secondary" onclick="refreshData()">🔄 Actualizar</button>
 <button class="btn-secondary" onclick="openBulkPayment()">💳 Pago Masivo</button>
 <button class="btn-secondary" onclick="changeUser()">👤 Cambiar Usuario</button>
-            </div>
-            <div class="button-group">
+</div>
+<div class="button-group">
 <button class="btn-secondary" onclick="checkDataIntegrity()" style="background: #ff9800;">🔍 Verificar Datos</button>
 <button class="btn-secondary" onclick="showNameNormalizationDialog()" style="background: #9c27b0;">🔧 Normalizar Nombres</button>
-                <button class="btn-secondary" onclick="showUpdateOldRecordsDialog()" style="background: #3f51b5;">📋 Actualizar Registros Antiguos</button>
+<button class="btn-secondary" onclick="showUpdateOldRecordsDialog()" style="background: #3f51b5;">📋 Actualizar Registros Antiguos</button>
 </div>
 <div id="dateAdvancesInfo"></div>
 <div class="table-container">
@@ -612,7 +611,7 @@ function doPost(e) {
 <th>Monto</th>
 <th>Anotaciones</th>
 <th>Registrado por</th>
-                            <th>Última modificación</th>
+<th>Última modificación</th>
 <th>Acciones</th>
 </tr>
 </thead>
@@ -991,10 +990,37 @@ showNotification(`Adelanto registrado por ${currentUser}`);
 submitBtn.disabled = false;
 }
 
-// Actualizar adelanto
+        // Actualizar adelanto
+        // Función editAdvance CORREGIDA
+        function editAdvance(id) {
+            console.log('Editando adelanto con ID:', id, 'Tipo:', typeof id);
+            
+            const advance = advances.find(a => {
+                // Comparar como string y número para mayor compatibilidad
+                return String(a.id) === String(id) || Number(a.id) === Number(id);
+            });
+            
+            console.log('Adelanto encontrado:', advance);
+            
+            if (advance) {
+                editingId = String(id); // Asegurar que se guarde como string
+                document.getElementById('editDate').value = advance.date;
+                document.getElementById('editEmployeeName').value = advance.employeeName;
+                document.getElementById('editAmount').value = advance.amount;
+                document.getElementById('editNotes').value = advance.notes || '';
+                document.getElementById('editModal').style.display = 'flex';
+            } else {
+                alert('No se pudo encontrar el adelanto para editar');
+            }
+        }
+
+        // Función updateAdvance CORREGIDA
 async function updateAdvance() {
+            console.log('Actualizando adelanto con ID:', editingId);
+            
 const advance = {
-id: editingId,
+                id: editingId,
+                id: String(editingId), // Asegurar que se envíe como string
 date: document.getElementById('editDate').value,
 employeeName: document.getElementById('editEmployeeName').value,
 amount: parseInt(document.getElementById('editAmount').value),
@@ -1003,32 +1029,46 @@ modifiedBy: currentUser,
 modifiedAt: new Date().toISOString()
 };
 
-            // Mantener información original
+            console.log('Datos a enviar:', advance);
+
+// Mantener información original
             const originalAdvance = advances.find(a => a.id === editingId);
-            if (originalAdvance) {
-                advance.registeredBy = originalAdvance.registeredBy;
-                advance.registeredAt = originalAdvance.registeredAt;
-            }
+            const originalAdvance = advances.find(a => 
+                String(a.id) === String(editingId) || Number(a.id) === Number(editingId)
+            );
+            
+if (originalAdvance) {
+advance.registeredBy = originalAdvance.registeredBy;
+advance.registeredAt = originalAdvance.registeredAt;
+}
 
 const result = await saveToSheets('update', advance);
 
 if (result) {
-// Recargar datos desde Google Sheets en lugar de actualizar localmente
+                // Recargar datos desde Google Sheets en lugar de actualizar localmente
+                // Recargar datos desde Google Sheets
 await loadData();
 closeModal();
-                showNotification('Adelanto actualizado');
-                showNotification(`Adelanto actualizado por ${currentUser}`);
+showNotification(`Adelanto actualizado por ${currentUser}`);
 }
 }
 
-// Eliminar adelanto
+        // Eliminar adelanto
+        // Función deleteAdvance CORREGIDA
 async function deleteAdvance(id) {
 if (!confirm('¿Está seguro de eliminar este adelanto?')) return;
 
-const result = await saveToSheets('delete', { id });
+            const result = await saveToSheets('delete', { id });
+            console.log('Eliminando adelanto con ID:', id);
+            
+            const result = await saveToSheets('delete', { 
+                id: String(id), // Asegurar que se envíe como string
+                deletedBy: currentUser 
+            });
 
 if (result) {
-// Recargar datos desde Google Sheets en lugar de eliminar localmente
+                // Recargar datos desde Google Sheets en lugar de eliminar localmente
+                // Recargar datos desde Google Sheets
 await loadData();
 showNotification('Adelanto eliminado');
 }
@@ -1057,7 +1097,8 @@ datalist.appendChild(option);
 });
 }
 
-// Renderizar tabla
+        // Renderizar tabla
+        // Función renderTable CORREGIDA
 function renderTable() {
 const tbody = document.getElementById('advancesBody');
 tbody.innerHTML = '';
@@ -1085,21 +1126,23 @@ filteredAdvances.sort((a, b) => new Date(b.date) - new Date(a.date));
 
 filteredAdvances.forEach(advance => {
 const row = tbody.insertRow();
-                
-                // Información de registro original
-const registeredBy = advance.registeredBy || 'Sistema anterior';
-                const registeredAt = advance.registeredAt ? new Date(advance.registeredAt).toLocaleDateString('es-ES') : '';
-                const registeredAt = advance.registeredAt ? formatDateTime(advance.registeredAt) : '';
-                
-                // Información de última modificación
-                let lastModifiedInfo = '-';
-                if (advance.modifiedBy && advance.modifiedAt) {
-                    lastModifiedInfo = `<small style="color: #666;">
-                        ${advance.modifiedBy}<br>
-                        ${formatDateTime(advance.modifiedAt)}
-                    </small>`;
-                }
 
+// Información de registro original
+const registeredBy = advance.registeredBy || 'Sistema anterior';
+const registeredAt = advance.registeredAt ? formatDateTime(advance.registeredAt) : '';
+
+// Información de última modificación
+let lastModifiedInfo = '-';
+if (advance.modifiedBy && advance.modifiedAt) {
+lastModifiedInfo = `<small style="color: #666;">
+                       ${advance.modifiedBy}<br>
+                       ${formatDateTime(advance.modifiedAt)}
+                   </small>`;
+}
+
+                // Asegurar que el ID se pase como string entre comillas
+                const idString = String(advance.id);
+                
 row.innerHTML = `
                    <td>${formatDate(advance.date)}</td>
                    <td>${advance.employeeName}</td>
@@ -1111,10 +1154,12 @@ row.innerHTML = `
                            ${registeredAt ? '<br>' + registeredAt : ''}
                        </small>
                    </td>
-                    <td>${lastModifiedInfo}</td>
+                   <td>${lastModifiedInfo}</td>
                    <td class="actions">
-                       <button class="btn-small btn-secondary" onclick="editAdvance(${advance.id})">✏️</button>
-                       <button class="btn-small btn-danger" onclick="deleteAdvance(${advance.id})">🗑️</button>
+                        <button class="btn-small btn-secondary" onclick="editAdvance(${advance.id})">✏️</button>
+                        <button class="btn-small btn-danger" onclick="deleteAdvance(${advance.id})">🗑️</button>
+                        <button class="btn-small btn-secondary" onclick="editAdvance('${idString}')">✏️</button>
+                        <button class="btn-small btn-danger" onclick="deleteAdvance('${idString}')">🗑️</button>
                    </td>
                `;
 });
@@ -1227,22 +1272,21 @@ let html = `
                `;
 
 dayAdvances.forEach(a => {
-                    const registeredInfo = a.registeredBy 
-                        ? `Registrado por: ${a.registeredBy}` 
-                        : 'Sistema anterior';
-                    const modifiedInfo = a.modifiedBy 
-                        ? `<br>Última modificación: ${a.modifiedBy} (${formatDateTime(a.modifiedAt)})` 
-                        : '';
-                    
+const registeredInfo = a.registeredBy 
+? `Registrado por: ${a.registeredBy}` 
+: 'Sistema anterior';
+const modifiedInfo = a.modifiedBy 
+? `<br>Última modificación: ${a.modifiedBy} (${formatDateTime(a.modifiedAt)})` 
+: '';
+
 html += `
                        <div class="date-advance-item">
                            <strong>${a.employeeName}</strong><br>
                            <span style="color: #667eea; font-size: 1.2em;">₲ ${a.amount.toLocaleString('es-PY')}</span><br>
-                            <small style="color: #666;">${a.notes || 'Sin anotaciones'}</small>
-                            <small style="color: #666;">${a.notes || 'Sin anotaciones'}</small><br>
-                            <small style="color: #999; font-style: italic;">
-                                ${registeredInfo}${modifiedInfo}
-                            </small>
+                           <small style="color: #666;">${a.notes || 'Sin anotaciones'}</small><br>
+                           <small style="color: #999; font-style: italic;">
+                               ${registeredInfo}${modifiedInfo}
+                           </small>
                        </div>
                    `;
 });
@@ -1301,25 +1345,25 @@ return 'Fecha inválida';
 }
 }
 
-        // Formatear fecha y hora
-        function formatDateTime(dateTimeString) {
-            if (!dateTimeString) return '';
-            
-            try {
-                const date = new Date(dateTimeString);
-                if (isNaN(date.getTime())) return '';
-                
-                const day = String(date.getDate()).padStart(2, '0');
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const year = date.getFullYear();
-                const hours = String(date.getHours()).padStart(2, '0');
-                const minutes = String(date.getMinutes()).padStart(2, '0');
-                
-                return `${day}/${month}/${year} ${hours}:${minutes}`;
-            } catch (e) {
-                return '';
-            }
-        }
+// Formatear fecha y hora
+function formatDateTime(dateTimeString) {
+if (!dateTimeString) return '';
+
+try {
+const date = new Date(dateTimeString);
+if (isNaN(date.getTime())) return '';
+
+const day = String(date.getDate()).padStart(2, '0');
+const month = String(date.getMonth() + 1).padStart(2, '0');
+const year = date.getFullYear();
+const hours = String(date.getHours()).padStart(2, '0');
+const minutes = String(date.getMinutes()).padStart(2, '0');
+
+return `${day}/${month}/${year} ${hours}:${minutes}`;
+} catch (e) {
+return '';
+}
+}
 
 function previousMonth() {
 currentDate.setMonth(currentDate.getMonth() - 1);
@@ -1352,17 +1396,17 @@ row.style.display = text.includes(searchTerm) ? '' : 'none';
 });
 }
 
-function editAdvance(id) {
-const advance = advances.find(a => a.id === id);
-if (advance) {
-editingId = id;
-document.getElementById('editDate').value = advance.date;
-document.getElementById('editEmployeeName').value = advance.employeeName;
-document.getElementById('editAmount').value = advance.amount;
-document.getElementById('editNotes').value = advance.notes || '';
-document.getElementById('editModal').style.display = 'flex';
-}
-}
+        function editAdvance(id) {
+            const advance = advances.find(a => a.id === id);
+            if (advance) {
+                editingId = id;
+                document.getElementById('editDate').value = advance.date;
+                document.getElementById('editEmployeeName').value = advance.employeeName;
+                document.getElementById('editAmount').value = advance.amount;
+                document.getElementById('editNotes').value = advance.notes || '';
+                document.getElementById('editModal').style.display = 'flex';
+            }
+        }
 
 function closeModal() {
 document.getElementById('editModal').style.display = 'none';
@@ -1373,8 +1417,7 @@ loadData();
 }
 
 function exportToExcel() {
-            const ws_data = [['Fecha', 'Empleado', 'Monto (₲)', 'Anotaciones', 'Registrado por', 'Fecha de registro']];
-            const ws_data = [['Fecha', 'Empleado', 'Monto (₲)', 'Anotaciones', 'Registrado por', 'Fecha de registro', 'Modificado por', 'Fecha de modificación']];
+const ws_data = [['Fecha', 'Empleado', 'Monto (₲)', 'Anotaciones', 'Registrado por', 'Fecha de registro', 'Modificado por', 'Fecha de modificación']];
 
 advances.forEach(advance => {
 ws_data.push([
@@ -1383,10 +1426,9 @@ advance.employeeName,
 advance.amount,
 advance.notes || '',
 advance.registeredBy || 'Sistema anterior',
-                    advance.registeredAt ? new Date(advance.registeredAt).toLocaleDateString('es-ES') : ''
-                    advance.registeredAt ? formatDateTime(advance.registeredAt) : '',
-                    advance.modifiedBy || '',
-                    advance.modifiedAt ? formatDateTime(advance.modifiedAt) : ''
+advance.registeredAt ? formatDateTime(advance.registeredAt) : '',
+advance.modifiedBy || '',
+advance.modifiedAt ? formatDateTime(advance.modifiedAt) : ''
 ]);
 });
 
@@ -1397,8 +1439,7 @@ XLSX.utils.book_append_sheet(wb, ws, 'Adelantos');
 const filename = `adelantos_sheets_${new Date().toISOString().split('T')[0]}.xlsx`;
 XLSX.writeFile(wb, filename);
 
-            showNotification('Datos exportados a Excel');
-            showNotification('Datos exportados a Excel con información completa de auditoría');
+showNotification('Datos exportados a Excel con información completa de auditoría');
 }
 
 function showNotification(message) {
@@ -1649,46 +1690,64 @@ if (!confirm(`¿Confirma el pago masivo?\n\nEmpleados: ${advancesToCreate.length
 return;
 }
 
-// Procesar pagos uno por uno
+            // Procesar pagos uno por uno
+            // Procesar pagos
 updateSyncStatus('syncing', 'Procesando pagos...');
 
-let successCount = 0;
-let errorCount = 0;
-
-// NO agregar localmente hasta confirmar éxito
-const tempAdvances = [];
-
-for (const advance of advancesToCreate) {
-try {
-const result = await saveToSheets('create', advance);
-
-if (result && result.id) {
-advance.id = result.id;
-tempAdvances.push(advance);
-successCount++;
-} else {
-errorCount++;
+            let successCount = 0;
+            let errorCount = 0;
+            
+            // NO agregar localmente hasta confirmar éxito
+            const tempAdvances = [];
+            
+            for (const advance of advancesToCreate) {
+                try {
+                    const result = await saveToSheets('create', advance);
+                    
+                    if (result && result.id) {
+                        advance.id = result.id;
+                        tempAdvances.push(advance);
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
+                } catch (error) {
+                    console.error('Error procesando adelanto:', error);
+                    errorCount++;
+                }
+            }
+            
+            // Cerrar modal primero
+            closeBulkModal();
+            
+            // Mostrar resultado
+            if (errorCount === 0) {
+                showNotification(`✅ ${successCount} pagos procesados exitosamente - Total: ₲ ${totalAmount.toLocaleString('es-PY')}`);
+                updateSyncStatus('success', 'Pagos procesados');
+            } else {
+                showNotification(`⚠️ Procesados: ${successCount}, Errores: ${errorCount}`);
+                updateSyncStatus('error', `${errorCount} errores`);
+            try {
+                const result = await saveToSheets('createBulk', {
+                    advances: advancesToCreate,
+                    registeredBy: currentUser
+                });
+                
+                // Cerrar modal primero
+                closeBulkModal();
+                
+                // Mostrar resultado
+                showNotification(`✅ Pagos procesados exitosamente - Total: ₲ ${totalAmount.toLocaleString('es-PY')}`);
+                
+                // Recargar datos inmediatamente
+                await loadData();
+            } catch (error) {
+                console.error('Error procesando pagos:', error);
+                showNotification('⚠️ Error al procesar pagos');
 }
-} catch (error) {
-console.error('Error procesando adelanto:', error);
-errorCount++;
-}
-}
-
-// Cerrar modal primero
-closeBulkModal();
-
-// Mostrar resultado
-if (errorCount === 0) {
-showNotification(`✅ ${successCount} pagos procesados exitosamente - Total: ₲ ${totalAmount.toLocaleString('es-PY')}`);
-updateSyncStatus('success', 'Pagos procesados');
-} else {
-showNotification(`⚠️ Procesados: ${successCount}, Errores: ${errorCount}`);
-updateSyncStatus('error', `${errorCount} errores`);
-}
-
-// Recargar datos inmediatamente desde Google Sheets para evitar duplicados
-await loadData();
+            
+            // Recargar datos inmediatamente desde Google Sheets para evitar duplicados
+            await loadData();
 }
 
 function saveToLocalStorage() {
@@ -1808,53 +1867,53 @@ alertMessage += '\n\nRevise la consola del navegador (F12) para más detalles.';
 alert(alertMessage);
 }
 
-        // Mostrar diálogo para actualizar registros antiguos
-        function showUpdateOldRecordsDialog() {
-            const oldRecords = advances.filter(a => !a.registeredBy || a.registeredBy === 'Sistema anterior');
-            
-            if (oldRecords.length === 0) {
-                alert('✅ No hay registros del sistema anterior. Todos los registros tienen información de auditoría.');
-                return;
-            }
-            
-            const message = `Se encontraron ${oldRecords.length} registros del sistema anterior sin información de usuario.\n\n` +
-                          `¿Desea asignar estos registros a "${currentUser}"?\n\n` +
-                          `⚠️ NOTA: Esta acción es solo para propósitos de auditoría. Los registros mantendrán su fecha original.`;
-            
-            if (confirm(message)) {
-                updateOldRecords(oldRecords);
-            }
-        }
-        
-        // Actualizar registros antiguos
-        async function updateOldRecords(oldRecords) {
-            updateSyncStatus('syncing', 'Actualizando registros...');
-            
-            let updateCount = 0;
-            const now = new Date().toISOString();
-            
-            // Actualizar localmente
-            oldRecords.forEach(record => {
-                record.registeredBy = currentUser;
-                record.registeredAt = record.registeredAt || now;
-                record.modifiedBy = currentUser;
-                record.modifiedAt = now;
-                updateCount++;
-            });
-            
-            // Guardar cambios localmente
-            localStorage.setItem('advances_backup', JSON.stringify(advances));
-            
-            // Actualizar la vista
-            renderAll();
-            
-            updateSyncStatus('success', 'Registros actualizados');
-            showNotification(`✅ Se actualizaron ${updateCount} registros del sistema anterior`);
-            
-            alert(`Se actualizaron ${updateCount} registros.\n\n` +
-                  `Los registros ahora aparecen como registrados por: ${currentUser}\n\n` +
-                  `⚠️ NOTA: Los cambios están guardados localmente.`);
-        }
+// Mostrar diálogo para actualizar registros antiguos
+function showUpdateOldRecordsDialog() {
+const oldRecords = advances.filter(a => !a.registeredBy || a.registeredBy === 'Sistema anterior');
+
+if (oldRecords.length === 0) {
+alert('✅ No hay registros del sistema anterior. Todos los registros tienen información de auditoría.');
+return;
+}
+
+const message = `Se encontraron ${oldRecords.length} registros del sistema anterior sin información de usuario.\n\n` +
+`¿Desea asignar estos registros a "${currentUser}"?\n\n` +
+`⚠️ NOTA: Esta acción es solo para propósitos de auditoría. Los registros mantendrán su fecha original.`;
+
+if (confirm(message)) {
+updateOldRecords(oldRecords);
+}
+}
+
+// Actualizar registros antiguos
+async function updateOldRecords(oldRecords) {
+updateSyncStatus('syncing', 'Actualizando registros...');
+
+let updateCount = 0;
+const now = new Date().toISOString();
+
+// Actualizar localmente
+oldRecords.forEach(record => {
+record.registeredBy = currentUser;
+record.registeredAt = record.registeredAt || now;
+record.modifiedBy = currentUser;
+record.modifiedAt = now;
+updateCount++;
+});
+
+// Guardar cambios localmente
+localStorage.setItem('advances_backup', JSON.stringify(advances));
+
+// Actualizar la vista
+renderAll();
+
+updateSyncStatus('success', 'Registros actualizados');
+showNotification(`✅ Se actualizaron ${updateCount} registros del sistema anterior`);
+
+alert(`Se actualizaron ${updateCount} registros.\n\n` +
+`Los registros ahora aparecen como registrados por: ${currentUser}\n\n` +
+`⚠️ NOTA: Los cambios están guardados localmente.`);
+}
 
 // Mostrar diálogo de normalización de nombres
 function showNameNormalizationDialog() {
