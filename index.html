@@ -1962,6 +1962,61 @@ Empleados únicos (normalizados): ${Object.keys(employeeSummary).length}`;
             // Nota: En producción, aquí deberías enviar los cambios a Google Sheets
             alert(`Se normalizaron ${updateCount} registros.\n\n⚠️ NOTA: Los cambios están guardados localmente. Para sincronizar con Google Sheets, deberá actualizar manualmente cada registro o implementar una función de actualización masiva en el backend.`);
         }
+// Agregar botones de prueba al HTML
+function addTestButtons() {
+    const container = document.querySelector('.container');
+    
+    const testSection = document.createElement('div');
+    testSection.className = 'card fade-in';
+    testSection.style.marginBottom = '20px';
+    testSection.style.background = '#fff3cd';
+    testSection.style.border = '2px solid #ffc107';
+    
+    testSection.innerHTML = `
+        <h2>🔧 Diagnóstico de Conexión</h2>
+        <p style="color: #856404; margin-bottom: 20px;">
+            <strong>Use estas herramientas para diagnosticar problemas de conexión:</strong>
+        </p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+            <button onclick="showConnectionInfo()" style="background: #17a2b8;">
+                📋 Ver Info
+            </button>
+            <button onclick="testBasicConnection()" style="background: #28a745;">
+                🧪 Prueba Básica
+            </button>
+            <button onclick="testPostConnection()" style="background: #007bff;">
+                📝 Prueba POST
+            </button>
+            <button onclick="openWebAppInNewTab()" style="background: #6f42c1;">
+                🔗 Abrir URL
+            </button>
+            <button onclick="resetAndReconfigure()" style="background: #dc3545;">
+                🔄 Resetear Todo
+            </button>
+        </div>
+        
+        <div style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 5px; font-size: 14px;">
+            <strong>📋 Orden de diagnóstico:</strong><br>
+            1. "Ver Info" → Verificar configuración<br>
+            2. "Prueba Básica" → Verificar conectividad<br>
+            3. "Prueba POST" → Verificar funcionalidad completa<br>
+            4. Si todo falla → "Resetear Todo"
+        </div>
+    `;
+    
+    // Insertar al principio del container, después del header
+    const header = container.querySelector('header');
+    header.insertAdjacentElement('afterend', testSection);
+}
+
+// Ejecutar al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        addTestButtons();
+        console.log('🔧 Botones de diagnóstico agregados');
+    }, 1000);
+});
 
     </script>
 </body>
