@@ -949,15 +949,13 @@
                 localStorage.setItem('advances_backup', JSON.stringify(advances));
             }
 
+            // Enviar a Google Sheets en segundo plano
             const result = await saveToSheets('update', advance);
             
             closeModal();
             showNotification(`Adelanto actualizado por ${currentUser}`);
             
-            // Recargar desde Google Sheets después para confirmar sincronización
-            setTimeout(() => {
-                loadData();
-            }, 1000);
+            // NO recargar automáticamente - mantener cambios locales
         }
 
         // Eliminar adelanto
