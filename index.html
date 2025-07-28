@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -450,7 +452,71 @@
             <ol>
                 <li>Crea una nueva hoja de Google Sheets</li>
                 <li>Ve a Extensiones → Apps Script</li>
-                <li>Pega el código que te proporcioné</li>
+                <li>Pega el siguiente código:</li>
+            </ol>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">
+// Código de Google Apps Script
+function doGet(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const data = sheet.getDataRange().getValues();
+  
+  // Convertir datos a JSON (omitir encabezados)
+  const jsonData = [];
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0]) { // Si hay ID
+      jsonData.push({
+        id: data[i][0],
+        date: data[i][1],
+        employeeName: data[i][2],
+        amount: data[i][3],
+        notes: data[i][4],
+        registeredBy: data[i][5],
+        registeredAt: data[i][6],
+        modifiedBy: data[i][7],
+        modifiedAt: data[i][8]
+      });
+    }
+  }
+  
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: 'success', data: jsonData }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const params = JSON.parse(e.postData.contents);
+  
+  if (params.action === 'create') {
+    const newRow = [
+      Date.now(), // ID
+      params.date,
+      params.employeeName,
+      params.amount,
+      params.notes || '',
+      params.registeredBy || '',
+      params.registeredAt || new Date().toISOString(),
+      '', // modifiedBy
+      ''  // modifiedAt
+    ];
+    sheet.appendRow(newRow);
+    
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'success', id: newRow[0] }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Agregar encabezados si la hoja está vacía
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['ID', 'Fecha', 'Empleado', 'Monto', 'Notas', 'Registrado Por', 'Fecha Registro', 'Modificado Por', 'Fecha Modificación']);
+  }
+  
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: 'success' }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+</pre>
+            <ol start="4">
                 <li>Guarda el script</li>
                 <li>Despliega como Web App (Ejecutar como: Yo, Acceso: Cualquiera)</li>
                 <li>Copia la URL y pégala en el campo de abajo</li>
@@ -554,6 +620,8 @@
                 </table>
             </div>
         </div>
+
+
     </div>
 
     <div id="loginModal" class="modal" style="display: flex;">
@@ -941,21 +1009,14 @@
                 advance.registeredAt = originalAdvance.registeredAt;
             }
 
-            // Actualizar en el array local PRIMERO
-            const index = advances.findIndex(a => a.id === editingId);
-            if (index !== -1) {
-                advances[index] = { ...advance };
-                renderAll();
-                localStorage.setItem('advances_backup', JSON.stringify(advances));
-            }
-
-            // Enviar a Google Sheets en segundo plano
             const result = await saveToSheets('update', advance);
             
-            closeModal();
-            showNotification(`Adelanto actualizado por ${currentUser}`);
-            
-            // NO recargar automáticamente - mantener cambios locales
+            if (result) {
+                // Recargar datos desde Google Sheets en lugar de actualizar localmente
+                await loadData();
+                closeModal();
+                showNotification(`Adelanto actualizado por ${currentUser}`);
+            }
         }
 
         // Eliminar adelanto
@@ -1114,14 +1175,15 @@
         function normalizeEmployeeName(name) {
             if (!name) return '';
             return name
-                .toLowerCase()
-                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                .replace(/\s+/g, ' ')
-                .trim();
+                .toLowerCase() // Convertir a minúsculas
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Eliminar tildes
+                .replace(/\s+/g, ' ') // Reemplazar múltiples espacios por uno
+                .trim(); // Eliminar espacios al inicio y final
         }
 
         // Actualizar estadísticas
         function updateStats() {
+            // Filtrar solo adelantos válidos con montos numéricos
             const validAdvances = advances.filter(a => a.amount && !isNaN(a.amount));
             
             const totalAdvances = validAdvances.length;
@@ -1130,6 +1192,7 @@
                 return sum + amount;
             }, 0);
             
+            // Contar empleados únicos usando nombres normalizados
             const normalizedEmployees = new Set(
                 validAdvances.map(a => normalizeEmployeeName(a.employeeName))
             );
@@ -1138,6 +1201,15 @@
             document.getElementById('totalAdvances').textContent = totalAdvances;
             document.getElementById('totalAmount').textContent = `₲ ${totalAmount.toLocaleString('es-PY')}`;
             document.getElementById('totalEmployees').textContent = uniqueEmployees;
+            
+            // Log para depuración
+            console.log('Estadísticas actualizadas:', {
+                totalRegistros: advances.length,
+                registrosValidos: validAdvances.length,
+                montoTotal: totalAmount,
+                empleadosUnicos: uniqueEmployees,
+                empleadosNormalizados: Array.from(normalizedEmployees)
+            });
         }
 
         // Mostrar adelantos de fecha
@@ -1188,23 +1260,28 @@
             try {
                 let dateStr = dateString;
                 
+                // Si es un objeto Date, convertir a string
                 if (dateString instanceof Date) {
                     dateStr = dateString.toISOString().split('T')[0];
                 }
                 
+                // Si viene con hora, tomar solo la fecha
                 if (typeof dateStr === 'string' && dateStr.includes('T')) {
                     dateStr = dateStr.split('T')[0];
                 }
                 
+                // Si está en formato YYYY-MM-DD
                 if (typeof dateStr === 'string' && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
                     const [year, month, day] = dateStr.split('-');
                     return `${day}/${month}/${year}`;
                 }
                 
+                // Si está en formato DD/MM/YYYY (ya formateado)
                 if (typeof dateStr === 'string' && dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
                     return dateStr;
                 }
                 
+                // Intentar parsear como fecha
                 const date = new Date(dateStr);
                 if (!isNaN(date.getTime())) {
                     const day = String(date.getDate()).padStart(2, '0');
@@ -1220,6 +1297,7 @@
             }
         }
 
+        // Formatear fecha y hora
         function formatDateTime(dateTimeString) {
             if (!dateTimeString) return '';
             
@@ -1313,7 +1391,7 @@
             const filename = `adelantos_sheets_${new Date().toISOString().split('T')[0]}.xlsx`;
             XLSX.writeFile(wb, filename);
             
-            showNotification('Datos exportados a Excel');
+            showNotification('Datos exportados a Excel con información completa de auditoría');
         }
 
         function showNotification(message) {
@@ -1351,13 +1429,16 @@
 
         // Funciones para pago masivo
         function openBulkPayment() {
+            // Establecer fecha del 20 del mes actual
             const today = new Date();
             const day20 = new Date(today.getFullYear(), today.getMonth(), 20);
             document.getElementById('bulkDate').value = day20.toISOString().split('T')[0];
             
+            // Obtener el mes y año actual para calcular adelantos
             const currentMonth = today.getMonth();
             const currentYear = today.getFullYear();
             
+            // Calcular adelantos por empleado en el mes actual (usando nombres normalizados)
             const employeeAdvances = {};
             const employeeOriginalNames = {};
             
@@ -1373,11 +1454,12 @@
                 }
             });
             
+            // Obtener lista única de empleados (normalizados)
             const uniqueEmployeesMap = {};
             advances.forEach(a => {
                 const normalized = normalizeEmployeeName(a.employeeName);
                 if (!uniqueEmployeesMap[normalized]) {
-                    uniqueEmployeesMap[normalized] = a.employeeName;
+                    uniqueEmployeesMap[normalized] = a.employeeName; // Guardar la versión más reciente del nombre
                 }
             });
             
@@ -1422,6 +1504,31 @@
                 employeesList.appendChild(div);
             });
             
+            // Agregar resumen
+            const totalAdvances = Object.values(employeeAdvances).reduce((sum, val) => sum + val, 0);
+            const totalEmployees = Object.keys(uniqueEmployeesMap).length;
+            const totalToPay = uniqueEmployees.reduce((sum, emp) => {
+                const normalized = normalizeEmployeeName(emp);
+                const prev = employeeAdvances[normalized] || 0;
+                return sum + Math.max(0, baseAmount - prev);
+            }, 0);
+            
+            const summary = document.createElement('div');
+            summary.style.marginTop = '20px';
+            summary.style.padding = '15px';
+            summary.style.background = '#f5f5f5';
+            summary.style.borderRadius = '8px';
+            summary.innerHTML = `
+                <h4 style="margin-bottom: 10px;">📊 Resumen del Mes</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
+                    <div>Total empleados: <strong>${totalEmployees}</strong></div>
+                    <div>Adelantos ya pagados: <strong>₲ ${totalAdvances.toLocaleString('es-PY')}</strong></div>
+                    <div>Base mensual total: <strong>₲ ${(baseAmount * totalEmployees).toLocaleString('es-PY')}</strong></div>
+                    <div style="color: #1976d2;">Saldo a pagar: <strong>₲ ${totalToPay.toLocaleString('es-PY')}</strong></div>
+                </div>
+            `;
+            employeesList.appendChild(summary);
+            
             document.getElementById('bulkModal').style.display = 'flex';
         }
 
@@ -1433,6 +1540,7 @@
         function selectAllEmployees() {
             const checkboxes = document.querySelectorAll('#employeesList input[type="checkbox"]');
             checkboxes.forEach(cb => {
+                // Solo seleccionar si el monto es mayor a 0
                 const amountInput = cb.parentElement.parentElement.querySelector('input[type="number"]');
                 if (amountInput && parseInt(amountInput.value) > 0) {
                     cb.checked = true;
@@ -1460,6 +1568,18 @@
             `;
             customEmployees.appendChild(div);
         }
+
+        // Actualizar montos cuando cambia el monto base
+        document.addEventListener('DOMContentLoaded', function() {
+            const bulkAmountInput = document.getElementById('bulkAmount');
+            if (bulkAmountInput) {
+                bulkAmountInput.addEventListener('change', function() {
+                    if (document.getElementById('bulkModal').style.display === 'flex') {
+                        openBulkPayment(); // Recalcular todo
+                    }
+                });
+            }
+        });
 
         async function processBulkPayment() {
             const bulkDate = document.getElementById('bulkDate').value;
@@ -1564,16 +1684,23 @@
             await loadData();
         }
 
+        function saveToLocalStorage() {
+            localStorage.setItem('advances_backup', JSON.stringify(advances));
+        }
+
+        // Función para verificar integridad de datos
         function checkDataIntegrity() {
             console.log('=== VERIFICACIÓN DE INTEGRIDAD DE DATOS ===');
             console.log(`Total de registros: ${advances.length}`);
             
+            // Buscar duplicados por ID
             const ids = advances.map(a => a.id);
             const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index);
             if (duplicateIds.length > 0) {
                 console.warn('IDs duplicados encontrados:', duplicateIds);
             }
             
+            // Verificar montos
             let invalidAmounts = 0;
             let totalCalculated = 0;
             advances.forEach((adv, index) => {
@@ -1588,6 +1715,8 @@
             console.log(`Monto total calculado: ₲ ${totalCalculated.toLocaleString('es-PY')}`);
             console.log(`Registros con montos inválidos: ${invalidAmounts}`);
             
+            // Detectar variaciones de nombres
+            const nameVariations = {};
             const normalizedToOriginal = {};
             
             advances.forEach(adv => {
@@ -1608,6 +1737,7 @@
                 }
             });
             
+            // Mostrar resumen por empleado (usando nombres normalizados)
             const employeeSummary = {};
             advances.forEach(adv => {
                 const normalizedName = normalizeEmployeeName(adv.employeeName);
@@ -1631,6 +1761,22 @@
                 console.log(`- ${Array.from(data.originalNames)[0]}: ${data.count} adelantos, Total: ₲ ${data.total.toLocaleString('es-PY')}${namesStr}`);
             });
             
+            // Buscar registros recientes potencialmente duplicados
+            const recentDate = new Date();
+            recentDate.setHours(recentDate.getHours() - 1); // Última hora
+            const recentAdvances = advances.filter(a => {
+                const advDate = new Date(a.registeredAt || a.date);
+                return advDate > recentDate;
+            });
+            
+            if (recentAdvances.length > 0) {
+                console.log(`\nAdelantos registrados en la última hora: ${recentAdvances.length}`);
+                recentAdvances.forEach(adv => {
+                    console.log(`- ${adv.employeeName}: ₲ ${adv.amount.toLocaleString('es-PY')} (${adv.date})`);
+                });
+            }
+            
+            // Detectar posibles duplicados de nombres
             const possibleDuplicates = [];
             Object.entries(normalizedToOriginal).forEach(([normalized, originals]) => {
                 if (originals.size > 1) {
@@ -1655,6 +1801,7 @@ Empleados únicos (normalizados): ${Object.keys(employeeSummary).length}`;
             alert(alertMessage);
         }
 
+        // Mostrar diálogo para actualizar registros antiguos
         function showUpdateOldRecordsDialog() {
             const oldRecords = advances.filter(a => !a.registeredBy || a.registeredBy === 'Sistema anterior');
             
@@ -1672,12 +1819,14 @@ Empleados únicos (normalizados): ${Object.keys(employeeSummary).length}`;
             }
         }
         
+        // Actualizar registros antiguos
         async function updateOldRecords(oldRecords) {
             updateSyncStatus('syncing', 'Actualizando registros...');
             
             let updateCount = 0;
             const now = new Date().toISOString();
             
+            // Actualizar localmente
             oldRecords.forEach(record => {
                 record.registeredBy = currentUser;
                 record.registeredAt = record.registeredAt || now;
@@ -1686,8 +1835,10 @@ Empleados únicos (normalizados): ${Object.keys(employeeSummary).length}`;
                 updateCount++;
             });
             
+            // Guardar cambios localmente
             localStorage.setItem('advances_backup', JSON.stringify(advances));
             
+            // Actualizar la vista
             renderAll();
             
             updateSyncStatus('success', 'Registros actualizados');
@@ -1698,7 +1849,9 @@ Empleados únicos (normalizados): ${Object.keys(employeeSummary).length}`;
                   `⚠️ NOTA: Los cambios están guardados localmente.`);
         }
 
+        // Mostrar diálogo de normalización de nombres
         function showNameNormalizationDialog() {
+            // Detectar todas las variaciones de nombres
             const normalizedToOriginal = {};
             advances.forEach(adv => {
                 const normalized = normalizeEmployeeName(adv.employeeName);
@@ -1710,12 +1863,13 @@ Empleados únicos (normalizados): ${Object.keys(employeeSummary).length}`;
                 }
             });
             
+            // Filtrar solo los que tienen variaciones
             const variations = Object.entries(normalizedToOriginal)
                 .filter(([_, originals]) => originals.length > 1)
                 .map(([normalized, originals]) => ({
                     normalized,
                     originals: originals.sort(),
-                    preferred: originals[0]
+                    preferred: originals[0] // Por defecto, usar el primero alfabéticamente
                 }));
             
             if (variations.length === 0) {
@@ -1741,6 +1895,7 @@ Empleados únicos (normalizados): ${Object.keys(employeeSummary).length}`;
             }
         }
         
+        // Normalizar todos los nombres
         async function normalizeAllNames(variations) {
             updateSyncStatus('syncing', 'Normalizando nombres...');
             
@@ -1761,6 +1916,7 @@ Empleados únicos (normalizados): ${Object.keys(employeeSummary).length}`;
                 return;
             }
             
+            // Actualizar localmente primero
             advances.forEach(advance => {
                 if (normalizations[advance.employeeName]) {
                     advance.employeeName = normalizations[advance.employeeName];
@@ -1768,14 +1924,17 @@ Empleados únicos (normalizados): ${Object.keys(employeeSummary).length}`;
                 }
             });
             
+            // Guardar cambios
             localStorage.setItem('advances_backup', JSON.stringify(advances));
             
+            // Actualizar la vista
             renderAll();
             
             updateSyncStatus('success', 'Nombres normalizados');
             showNotification(`✅ Se normalizaron ${updateCount} registros exitosamente`);
             
-            alert(`Se normalizaron ${updateCount} registros.\n\n⚠️ NOTA: Los cambios están guardados localmente.`);
+            // Nota: En producción, aquí deberías enviar los cambios a Google Sheets
+            alert(`Se normalizaron ${updateCount} registros.\n\n⚠️ NOTA: Los cambios están guardados localmente. Para sincronizar con Google Sheets, deberá actualizar manualmente cada registro o implementar una función de actualización masiva en el backend.`);
         }
 
     </script>
