@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1009,13 +1007,32 @@ function doPost(e) {
                 advance.registeredAt = originalAdvance.registeredAt;
             }
 
+            // Actualizar en el array local PRIMERO
+            const index = advances.findIndex(a => a.id === editingId);
+            if (index !== -1) {
+                advances[index] = { ...advance };
+                
+                // Actualizar la vista inmediatamente con los nuevos datos
+                renderAll();
+                
+                // Guardar backup local
+                localStorage.setItem('advances_backup', JSON.stringify(advances));
+            }
+
             const result = await saveToSheets('update', advance);
             
             if (result) {
-                // Recargar datos desde Google Sheets en lugar de actualizar localmente
-                await loadData();
                 closeModal();
                 showNotification(`Adelanto actualizado por ${currentUser}`);
+                
+                // Recargar desde Google Sheets después para confirmar sincronización
+                setTimeout(() => {
+                    loadData();
+                }, 1000);
+            } else {
+                // Si falla el guardado en Sheets, mantener cambios locales
+                showNotification(`Adelanto actualizado localmente (revisar sincronización)`);
+                closeModal();
             }
         }
 
